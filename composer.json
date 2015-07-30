@@ -1,0 +1,26 @@
+{
+    "name": "crysalead/chaos-database",
+    "description": "PDO driver for Chaos.",
+    "keywords": ["PDO", "Database driver"],
+    "license": "MIT",
+    "require": {
+        "php": ">=5.5",
+        "crysalead/set": "~1.0",
+        "crysalead/chaos": "dev-master",
+        "crysalead/sql": "dev-master"
+    },
+    "require-dev": {
+        "php": ">=5.4",
+        "crysalead/kahlan": "~1.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "chaos\\database\\": "src/",
+            "chaos\\database\\spec\\": "spec/"
+        }
+    },
+    "config": {
+        "bin-dir": "bin"
+    },
+    "minimum-stability": "dev"
+}
