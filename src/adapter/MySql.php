@@ -2,7 +2,9 @@
 namespace chaos\database\adapter;
 
 use PDO;
+use PDOException;
 use set\Set;
+use chaos\database\DatabaseException;
 
 /**
  * MySQL adapter
@@ -25,9 +27,7 @@ class MySql extends \chaos\database\Database
         $features = [
             'arrays' => false,
             'transactions' => true,
-            'booleans' => true,
-            'schema' => true,
-            'sources' => true
+            'booleans' => true
         ];
         return isset($features[$feature]) ? $features[$feature] : null;
     }
@@ -62,6 +62,10 @@ class MySql extends \chaos\database\Database
      */
     public function connect()
     {
+        if (!$this->_config['database']) {
+            throw new DatabaseException('Error, no database name has been configured.');
+        }
+
         if (!$this->_config['dsn']) {
             $host = $this->_config['host'];
             list($host, $port) = explode(':', $host) + [1 => "3306"];
@@ -113,11 +117,20 @@ class MySql extends \chaos\database\Database
                 $field = $this->_column($column['Type']);
                 $default = $column['Default'];
 
-                if ($default === 'CURRENT_TIMESTAMP') {
-                    $default = null;
-                } elseif ($column['Type'] === 'boolean') {
-                    $default = !!$default;
+                switch ($field['type']) {
+                    case 'boolean':
+                        if ($default === '1') {
+                            $default = true;
+                        }
+                        if ($default === '0') {
+                            $default = false;
+                        }
+                        break;
+                    case 'datetime':
+                        $default = $default !== 'CURRENT_TIMESTAMP' ? $default : null;
+                        break;
                 }
+
                 $fields[$column['Field']] = $field + [
                     'null'     => ($column['Null'] === 'YES' ? true : false),
                     'default'  => $default
@@ -141,14 +154,9 @@ class MySql extends \chaos\database\Database
      */
     protected function _column($real)
     {
-        if (is_array($real)) {
-            return $real['type'] . (isset($real['length']) ? "({$real['length']})" : '');
-        }
-
-        if (!preg_match('/(?P<type>\w+)(?:\((?P<length>[\d,]+)\))?/', $real, $column)) {
-            return $real;
-        }
+        preg_match('/(?P<type>\w+)(?:\((?P<length>[\d,]+)\))?/', $real, $column);
         $column = array_intersect_key($column, ['type' => null, 'length' => null]);
+        $column = array_merge(['use' => $column['type']], $column);
 
         if (isset($column['length']) && $column['length']) {
             $length = explode(',', $column['length']) + [null, null];
@@ -156,7 +164,7 @@ class MySql extends \chaos\database\Database
             $length[1] ? $column['precision'] = intval($length[1]) : null;
         }
 
-        $column['type'] = $this->dialect()->typeMatch($column['type']);
+        $column['type'] = $this->dialect()->mapped($column);
         return $column;
     }
 
@@ -169,14 +177,11 @@ class MySql extends \chaos\database\Database
      */
     public function encoding($encoding = null)
     {
-        $encodingMap = ['UTF-8' => 'utf8'];
-
-        if (empty($encoding)) {
+        if (!$encoding) {
             $query = $this->_pdo->query("SHOW VARIABLES LIKE 'character_set_client'");
             $encoding = $query->fetchColumn(1);
-            return ($key = array_search($encoding, $encodingMap)) ? $key : $encoding;
+            return strtolower($encoding);
         }
-        $encoding = isset($encodingMap[$encoding]) ? $encodingMap[$encoding] : $encoding;
 
         try {
             $this->_pdo->exec("SET NAMES '{$encoding}'");

@@ -20,6 +20,10 @@ foreach ($connections as $db => $connection) {
 
     describe("Schema[{$db}]", function() use ($connection) {
 
+        before(function() use ($connection) {
+            skipIf(!$connection);
+        });
+
         beforeEach(function() use ($connection) {
 
             skipIf(!$connection);

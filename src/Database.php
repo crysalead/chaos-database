@@ -63,11 +63,6 @@ abstract class Database
     protected $_formatters = [];
 
     /**
-     * ISO 8601 date format.
-     */
-    protected $_dateFormat = 'Y-m-d H:i:s';
-
-    /**
      * Creates the database object and set default values for it.
      *
      * Options defined:
@@ -107,7 +102,7 @@ abstract class Database
             'handlers'   => []
         ];
         $config = Set::merge($defaults, $config);
-        $this->_config = $config + $defaults;
+        $this->_config = $config;
 
         $this->_classes = $this->_config['classes'] + $this->_classes;
         $this->_pdo = $this->_config['pdo'];
@@ -115,7 +110,7 @@ abstract class Database
 
         $this->_dialect = $config['dialect'];
         unset($this->_config['dialect']);
-        $this->_handlers = Set::merge($config['handlers'], $this->_handlers());
+        $this->_handlers = Set::merge($this->_handlers(), $config['handlers']);
 
         if ($this->_dialect === null) {
             $dialect = $this->_classes['dialect'];
@@ -124,9 +119,6 @@ abstract class Database
                     return $this->quote($string);
                 },
                 'caster' => function($value, $states = []) {
-                    if (!empty($states['name']) && !empty($states['schema'])) {
-                        return $states['schema']->format('datasource', $states['name'], $value);
-                    }
                     $type = isset($states['type']) ? $states['type'] : gettype($value);
                     if (is_array($type)) {
                         $type = call_user_func($type, $states['name']);
@@ -148,9 +140,10 @@ abstract class Database
         $this->formatter('cast', 'float',     $handlers['cast']['float']);
         $this->formatter('cast', 'decimal',   $handlers['cast']['decimal']);
         $this->formatter('cast', 'date',      $handlers['cast']['date']);
-        $this->formatter('cast', 'datetime',  $handlers['cast']['date']);
+        $this->formatter('cast', 'datetime',  $handlers['cast']['datetime']);
         $this->formatter('cast', 'boolean',   $handlers['cast']['boolean']);
         $this->formatter('cast', 'null',      $handlers['cast']['null']);
+        $this->formatter('cast', 'string',    $handlers['cast']['string']);
         $this->formatter('cast', '_default_', $handlers['cast']['string']);
 
         $this->formatter('datasource', 'id',        $handlers['datasource']['string']);
@@ -159,9 +152,10 @@ abstract class Database
         $this->formatter('datasource', 'float',     $handlers['datasource']['string']);
         $this->formatter('datasource', 'decimal',   $handlers['datasource']['string']);
         $this->formatter('datasource', 'date',      $handlers['datasource']['date']);
-        $this->formatter('datasource', 'datetime',  $handlers['datasource']['date']);
+        $this->formatter('datasource', 'datetime',  $handlers['datasource']['datetime']);
         $this->formatter('datasource', 'boolean',   $handlers['datasource']['boolean']);
         $this->formatter('datasource', 'null',      $handlers['datasource']['null']);
+        $this->formatter('datasource', 'string',    $handlers['datasource']['quote']);
         $this->formatter('datasource', '_default_', $handlers['datasource']['quote']);
     }
 
@@ -198,11 +192,8 @@ abstract class Database
         }
         $config = $this->_config;
 
-        if (!$config['database']) {
-            throw new PDOException('No Database configured');
-        }
         if (!$config['dsn']) {
-            throw new PDOException('No DSN setup for DB Connection');
+            throw new DatabaseException('Error, no DSN setup has been configured for database connection.');
         }
         $dsn = $config['dsn'];
 
@@ -256,23 +247,25 @@ abstract class Database
     /**
      * PDOException wrapper
      *
-     * @param  PDOException $e A PDOException.
+     * @param  PDOException $e   A PDOException.
+     * @param  string       $sql An optionnal SQL query.
      * @throws DatabaseException
      */
-    protected function _exception($e)
+    protected function _exception($e, $sql = null)
     {
         $config = $this->_config;
         $code = $e->getCode();
         $msg = $e->getMessage();
         switch (true) {
             case $code === 'HY000' || substr($code, 0, 2) === '08':
-                $msg = "Unable to connect to host `{$config['host']}`.";
+                $msg = "Unable to connect to host `{$config['host']}` [{$code}].";
             break;
-            case in_array($code, array('28000', '42000')):
+            case in_array($code, array('28000')):
                 $msg = "Host connected, but could not access database `{$config['database']}`.";
             break;
         }
-        throw new DatabaseException($msg, $code, $e);
+        $exception = new DatabaseException("{$msg}" . ($sql ? " in {$sql}" : ''), (int) $code);
+        throw $exception;
     }
 
     /**
@@ -312,19 +305,23 @@ abstract class Database
                 },
                 'decimal' => function($value, $options = []) {
                     $options += ['precision' => 2];
-                    return number_format($number, $options['precision']);
+                    return (float) number_format($value, $options['precision']);
                 },
                 'boolean' => function($value, $options = []) {
                     return !!$value;
                 },
                 'date'    => function($value, $options = []) {
+                    return $this->format('cast', 'datetime', $value, ['format' => 'Y-m-d']);
+                },
+                'datetime'    => function($value, $options = []) {
+                    $options += ['format' => 'Y-m-d H:i:s'];
                     if (is_numeric($value)) {
                         return new DateTime('@' . $value);
                     }
                     if ($value instanceof DateTime) {
                         return $value;
                     }
-                    return DateTime::createFromFormat(date($this->_dateFormat, strtotime($value)), $value);
+                    return DateTime::createFromFormat($options['format'], date($options['format'], strtotime($value)));
                 },
                 'null'    => function($value, $options = []) {
                     return null;
@@ -338,10 +335,14 @@ abstract class Database
                     return $this->dialect()->quote((string) $value);
                 },
                 'date' => function($value, $options = []) {
+                    return $this->format('datasource', 'datetime', $value, ['format' => 'Y-m-d']);
+                },
+                'datetime' => function($value, $options = []) {
+                    $options += ['format' => 'Y-m-d H:i:s'];
                     if ($value instanceof DateTime) {
-                        $date = $value->format($this->_dateFormat);
+                        $date = $value->format($options['format']);
                     } else {
-                        $date = date($this->_dateFormat, is_numeric($value) ? $value : strtotime($value));
+                        $date = date($options['format'], is_numeric($value) ? $value : strtotime($value));
                     }
                     return $this->dialect()->quote((string) $date);
                 },
@@ -415,12 +416,17 @@ abstract class Database
      */
     public function query($sql, $data = [], $options = [])
     {
-        $statement = $this->_pdo->prepare($sql);
+        $defaults = ['exception' => true];
+        $options += $defaults;
+        $statement = $this->driver()->prepare($sql);
 
         try {
             $error = !$statement->execute($data);
-        } catch (Exception $e) {
+        } catch (PDOException $e) {
             $error = true;
+            if ($options['exception']) {
+                $this->_exception($e, $sql);
+            }
         }
 
         $err = $statement->errorInfo();
@@ -430,7 +436,7 @@ abstract class Database
 
         return new $cursor($options + [
             'resource' => $statement,
-            'failed'   => $error,
+            'error'    => $error,
             'errno'    => $err[0],
             'errmsg'   => $errmsg
         ]);
@@ -443,7 +449,7 @@ abstract class Database
      */
     public function lastInsertId()
     {
-        return $this->_pdo->lastInsertId();
+        return $this->driver()->lastInsertId();
     }
 
     /**
@@ -451,11 +457,13 @@ abstract class Database
      *
      * @return array
      */
-    public function error()
+    public function errmsg()
     {
-        if ($error = $this->_pdo->errorInfo()) {
-            return [$error[1], $error[2]];
+        $err = $this->driver()->errorInfo();
+        if (!isset($err[0]) || !(int) $err[0]) {
+            return '';
         }
+        return $err[0] . ($err[1] ? ' (' . $err[1] . ')' : '') . ':' . $err[2];
     }
 
     /**

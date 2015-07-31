@@ -1,7 +1,9 @@
 <?php
 namespace chaos\database\adapter;
 
+use PDOException;
 use set\Set;
+use chaos\database\DatabaseException;
 
 /**
  * PostgreSQL adapter
@@ -31,9 +33,7 @@ class PostgreSql extends \chaos\database\Database
         $features = [
             'arrays' => true,
             'transactions' => true,
-            'booleans' => true,
-            'schema' => true,
-            'sources' => true
+            'booleans' => true
         ];
         return isset($features[$feature]) ? $features[$feature] : null;
     }
@@ -62,7 +62,7 @@ class PostgreSql extends \chaos\database\Database
                 'cast' => [
                     'boolean' => function($value, $options = []) {
                         return $value === 't';
-                    },
+                    }
                 ],
                 'datasource' => [
                     'boolean' => function($value, $options = []) {
@@ -101,6 +101,10 @@ class PostgreSql extends \chaos\database\Database
      */
     public function connect()
     {
+        if (!$this->_config['database']) {
+            throw new DatabaseException('Error, no database name has been configured.');
+        }
+
         if (!$this->_config['dsn']) {
             $host = $this->_config['host'];
             list($host, $port) = explode(':', $host) + [1 => "5432"];
@@ -147,17 +151,26 @@ class PostgreSql extends \chaos\database\Database
      * @return object         Returns a shema definition.
      */
     public function describe($name,  $fields = [], $meta = []) {
-        $schema = $this->_classes['schema'];
+        $class = $this->_classes['schema'];
+
+        $schema = new $class([
+            'connection' => $this,
+            'source'     => $name,
+            'meta'       => $meta
+        ]);
 
         if (func_num_args() === 1) {
 
             $select = $this->dialect()->statement('select');
             $select->fields([
-                'column_name' => 'Field',
-                'data_type'   => 'Type',
-                'is_nullable' => 'Null',
-                'column_default' => 'Default',
-                'character_maximum_length' => 'CharLength'
+                'column_name' => 'name',
+                'data_type'   => 'use',
+                'is_nullable' => 'null',
+                'column_default' => 'default',
+                'character_maximum_length' => 'length',
+                'numeric_precision' => 'numeric_length',
+                'numeric_scale' => 'precision',
+                'datetime_precision' => 'date_length'
             ])
             ->from(['information_schema' => ['columns']])
             ->where([
@@ -167,61 +180,64 @@ class PostgreSql extends \chaos\database\Database
 
             $columns = $this->query($select->toString());
 
-            foreach ($columns as $column) {
-                $field = $this->_column($column['Type']);
-                $default = $column['Default'];
+            foreach ($columns as $row) {
+                $name = $row['name'];
+                $use = $row['use'];
+                $field = $this->_column($row['use']);
+                $default = $row['default'];
 
-                if (preg_match("/^'(.*)'::/", $default, $match)) {
-                    $default = $match[1];
-                } elseif ($default === 'true') {
-                    $default = true;
-                } elseif ($default === 'false') {
-                    $default = false;
-                } else {
-                    $default = null;
+                if ($row['length']) {
+                    $field['length'] = $row['length'];
+                } else if ($row['date_length']) {
+                    $field['length'] = $row['date_length'];
+                } else if ($use === 'numeric' && $row['numeric_length']) {
+                    $field['length'] = $row['numeric_length'];
                 }
-                $fields[$column['Field']] = $field + [
-                    'null'     => ($column['Null'] === 'YES' ? true : false),
+                if ($row['precision']) {
+                    $field['precision'] = $row['precision'];
+                }
+
+                switch ($field['type']) {
+                    case 'string':
+                        if (preg_match("/^'(.*)'::/", $default, $match)) {
+                            $default = $match[1];
+                        }
+                        break;
+                    case 'boolean':
+                        if ($default === 'true') {
+                            $default = true;
+                        }
+                        if ($default === 'false') {
+                            $default = false;
+                        }
+                        break;
+                    case 'integer':
+                        $default = is_numeric($default) ? $default : null;
+                        break;
+                    case 'datetime':
+                        $default = $default !== 'now()' ? $default : null;
+                        break;
+                }
+
+                $schema->set($name, $field + [
+                    'null'     => ($row['null'] === 'YES' ? true : false),
                     'default'  => $default
-                ];
-                if ($fields[$column['Field']]['type'] === 'string') {
-                    $fields[$column['Field']]['length'] = $column['CharLength'];
-                }
+                ]);
             }
         }
-
-        return new $schema([
-            'connection' => $this,
-            'source'     => $name,
-            'fields'     => $fields,
-            'meta'        => $meta
-        ]);
+        return $schema;
     }
 
     /**
      * Converts database-layer column types to basic types.
      *
-     * @param  string $real Real database-layer column type (i.e. `"varchar(255)"`)
-     * @return array        Column type (i.e. "string") plus 'length' when appropriate.
+     * @param  string $use Real database-layer column type (i.e. `"varchar(255)"`)
+     * @return array       Column type (i.e. "string") plus 'length' when appropriate.
      */
-    protected function _column($real)
+    protected function _column($use)
     {
-        if (is_array($real)) {
-            return $real['type'] . (isset($real['length']) ? "({$real['length']})" : '');
-        }
-
-        if (!preg_match('/(?P<type>\w+)(?:\((?P<length>[\d,]+)\))?/', $real, $column)) {
-            return $real;
-        }
-        $column = array_intersect_key($column, ['type' => null, 'length' => null]);
-
-        if (isset($column['length']) && $column['length']) {
-            $length = explode(',', $column['length']) + [null, null];
-            $column['length'] = $length[0] ? intval($length[0]) : null;
-            $length[1] ? $column['precision'] = intval($length[1]) : null;
-        }
-
-        $column['type'] = $this->dialect()->typeMatch($column['type']);
+        $column = ['use' => $use];
+        $column['type'] = $this->dialect()->mapped($column);
         return $column;
     }
 
@@ -232,15 +248,15 @@ class PostgreSql extends \chaos\database\Database
      * @return mixed       If setting the searchPath; returns ture on success, else false
      *                     When getting, returns the searchPath
      */
-    public function searchPath($searchPath)
+    public function searchPath($searchPath = null)
     {
-        if (empty($searchPath)) {
-            $query = $this->_pdo->query('SHOW search_path');
-            $searchPath = $query->fetchColumn(1);
-            return explode(",", $searchPath);
+        if (!func_num_args()) {
+            $query = $this->driver()->query('SHOW search_path');
+            $searchPath = $query->fetch();
+            return explode(",", $searchPath['search_path']);
         }
         try{
-            $this->_pdo->exec("SET search_path TO ${searchPath}");
+            $this->driver()->exec("SET search_path TO ${searchPath}");
             return true;
         } catch (PDOException $e) {
             return false;
@@ -254,7 +270,7 @@ class PostgreSql extends \chaos\database\Database
      */
     public function lastInsertId($sequence = null)
     {
-        $id = $this->_pdo->lastInsertId($sequence);
+        $id = $this->driver()->lastInsertId($sequence);
         return ($id && $id !== '0') ? $id : null;
     }
 
@@ -268,11 +284,11 @@ class PostgreSql extends \chaos\database\Database
     public function timezone($timezone = null)
     {
         if (empty($timezone)) {
-            $query = $this->_pdo->query('SHOW TIME ZONE');
+            $query = $this->driver()->query('SHOW TIME ZONE');
             return $query->fetchColumn();
         }
         try {
-            $this->_pdo->exec("SET TIME ZONE '{$timezone}'");
+            $this->driver()->exec("SET TIME ZONE '{$timezone}'");
             return true;
         } catch (PDOException $e) {
             return false;
@@ -288,16 +304,14 @@ class PostgreSql extends \chaos\database\Database
      */
     public function encoding($encoding = null)
     {
-        $encodingMap = ['UTF-8' => 'UTF8'];
-
         if (empty($encoding)) {
-            $query = $this->_pdo->query("SHOW client_encoding");
+            $query = $this->driver()->query("SHOW client_encoding");
             $encoding = $query->fetchColumn();
-            return ($key = array_search($encoding, $encodingMap)) ? $key : $encoding;
+            return strtolower($encoding);
         }
-        $encoding = isset($encodingMap[$encoding]) ? $encodingMap[$encoding] : $encoding;
+
         try {
-            $this->_pdo->exec("SET NAMES '{$encoding}'");
+            $this->driver()->exec("SET NAMES '{$encoding}'");
             return true;
         } catch (PDOException $e) {
             return false;

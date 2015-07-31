@@ -156,4 +156,15 @@ class Schema extends \chaos\Schema
 
         return $this->connection()->query($query->toString());
     }
+
+    /**
+     * Returns the last insert id from the database.
+     *
+     * @return mixed Returns the last insert id.
+     */
+    public function lastInsertId()
+    {
+        $sequence = $this->source(). '_' . $this->primaryKey() . '_seq';
+        return $this->connection()->lastInsertId($sequence);
+    }
 }

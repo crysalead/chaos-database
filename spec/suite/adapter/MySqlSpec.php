@@ -1,40 +1,74 @@
 <?php
 namespace chaos\database\spec\suite\adapter;
 
+use chaos\database\DatabaseException;
 use chaos\database\adapter\MySql;
+use chaos\database\Schema;
 
 use kahlan\plugin\Stub;
-use chaos\database\spec\fixture\Fixtures;
+use kahlan\plugin\Monkey;
 
 describe("MySql", function() {
 
-    beforeEach(function() {
+    before(function() {
         $box = box('chaos.spec');
         skipIf(!$box->has('source.database.mysql'));
-        $this->adapter = $box->get('source.database.mysql');
-        $this->fixtures = new Fixtures([
-            'connection' => $this->adapter,
-            'fixtures'   => [
-                'gallery' => 'chaos\database\spec\fixture\schema\Gallery'
-            ]
-        ]);
     });
 
-    afterEach(function() {
-        $this->fixtures->drop();
-        $this->fixtures->reset();
+    beforeEach(function() {
+        $box = box('chaos.spec');
+        $this->adapter = $box->get('source.database.mysql');
+    });
+
+    describe("::enabled()", function() {
+
+        it("returns `true` for enabled features, false otherwise.", function() {
+
+            expect(MySql::enabled())->toBe(true);
+            expect(MySql::enabled('arrays'))->toBe(false);
+            expect(MySql::enabled('transactions'))->toBe(true);
+            expect(MySql::enabled('booleans'))->toBe(true);
+
+        });
+
+        it("returns `false` if the extension is not loaded.", function() {
+
+            Monkey::patch('extension_loaded', function() { return false; });
+            expect(MySql::enabled())->toBe(false);
+
+        });
+
+    });
+
+    describe("->connect()", function() {
+
+        it("throws an exception if no database name is set", function() {
+
+            $closure = function() {
+                new MySql();
+            };
+            expect($closure)->toThrow(new DatabaseException('Error, no database name has been configured.'));
+
+        });
+
     });
 
     describe("->sources()", function() {
 
         it("shows sources", function() {
 
-            $this->fixtures->populate('gallery');
+            $schema = new Schema(['connection' => $this->adapter]);
+            $schema->source('gallery');
+            $schema->set('id', ['type' => 'serial']);
+            $schema->create();
+
             $sources = $this->adapter->sources();
 
             expect($sources)->toBe([
                 'gallery' => 'gallery'
             ]);
+
+            $schema->drop();
 
         });
 
@@ -44,25 +78,138 @@ describe("MySql", function() {
 
         it("describe a source", function() {
 
-            $this->fixtures->populate('gallery');
+            $schema = new Schema(['connection' => $this->adapter]);
+            $schema->source('gallery');
+            $schema->set('id', ['type' => 'serial']);
+            $schema->set('name', [
+                'type'    => 'string',
+                'length'  => 128,
+                'default' => 'Johnny Boy'
+            ]);
+            $schema->set('active', [
+                'type'    => 'boolean',
+                'default' => true
+            ]);
+            $schema->set('inactive', [
+                'type'    => 'boolean',
+                'default' => false
+            ]);
+            $schema->set('money', [
+                'type'      => 'decimal',
+                'length'    => 10,
+                'precision' => 2
+            ]);
+            $schema->set('created', [
+                'type'    => 'datetime',
+                'use'     => 'timestamp',
+                'default' => [':plain' => 'CURRENT_TIMESTAMP']
+            ]);
+            $schema->create();
 
-            $schema = $this->adapter->describe('gallery');
+            $gallery = $this->adapter->describe('gallery');
 
-            expect($schema->field('id'))->toEqual([
-                'type' => 'integer',
-                'length' => 11,
-                'null' => false,
+            expect($gallery->field('id'))->toBe([
+                'use'     => 'int',
+                'type'    => 'integer',
+                'length'  => 11,
+                'null'    => false,
                 'default' => null,
-                'array' => false
+                'array'   => false
             ]);
 
-            expect($schema->field('name'))->toEqual([
-                'type' => 'string',
-                'length' => 255,
-                'null' => true,
-                'default' => null,
-                'array' => false
+            expect($gallery->field('name'))->toBe([
+                'use'     => 'varchar',
+                'type'    => 'string',
+                'length'  => 128,
+                'null'    => true,
+                'default' => 'Johnny Boy',
+                'array'   => false
             ]);
+
+            expect($gallery->field('active'))->toBe([
+                'use'     => 'tinyint',
+                'type'    => 'boolean',
+                'length'  => 1,
+                'null'    => true,
+                'default' => true,
+                'array'   => false
+            ]);
+
+            expect($gallery->field('inactive'))->toBe([
+                'use'     => 'tinyint',
+                'type'    => 'boolean',
+                'length'  => 1,
+                'null'    => true,
+                'default' => false,
+                'array'   => false
+            ]);
+
+            expect($gallery->field('money'))->toBe([
+                'use'       => 'decimal',
+                'type'      => 'decimal',
+                'length'    => 10,
+                'precision' => 2,
+                'null'      => true,
+                'default'   => null,
+                'array'     => false
+            ]);
+
+            expect($gallery->field('created'))->toBe([
+                'use'     => 'timestamp',
+                'type'    => 'datetime',
+                'null'    => true,
+                'default' => null,
+                'array'   => false
+            ]);
+
+            $schema->drop();
+
+        });
+
+    });
+
+    describe("->lastInsertId()", function() {
+
+        it("gets the encoding last insert ID", function() {
+
+            $schema = new Schema(['connection' => $this->adapter]);
+            $schema->source('gallery');
+            $schema->set('id',   ['type' => 'serial']);
+            $schema->set('name', ['type' => 'string']);
+            $schema->create();
+
+            $schema->insert(['name' => 'new gallery']);
+            expect($schema->lastInsertId())->toBe("1");
+
+            $schema->drop();
+        });
+
+    });
+
+    describe("->query", function() {
+
+        it("returns an invalid cursor when an error occurs in silent mode", function() {
+
+            $cursor = $this->adapter->query('SELECT', [], ['exception' => false]);
+            expect($cursor->error())->toBe(true);
+
+        });
+
+    });
+
+    describe("->encoding()", function() {
+
+        it("gets/sets the encoding", function() {
+
+            expect($this->adapter->encoding())->toBe('utf8');
+            expect($this->adapter->encoding('cp1251'))->toBe(true);
+            expect($this->adapter->encoding())->toBe('cp1251');
+
+        });
+
+        it("return false for invalid encoding", function() {
+
+            expect($this->adapter->encoding('win1250'))->toBe(false);
 
         });
 

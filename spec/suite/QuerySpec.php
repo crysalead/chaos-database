@@ -21,9 +21,12 @@ foreach ($connections as $db => $connection) {
 
     describe("Query[{$db}]", function() use ($connection) {
 
+        before(function() use ($connection) {
+            skipIf(!$connection);
+        });
+
         beforeEach(function() use ($connection) {
 
-            skipIf(!$connection);
             $this->connection = $connection;
             $this->fixtures = new Fixtures([
                 'connection' => $connection,

@@ -48,10 +48,6 @@ class Cursor extends \chaos\Cursor
      */
     protected function _fetchResource()
     {
-        if (!$this->_resource instanceof PDOStatement) {
-            $this->_resource = null;
-            return false;
-        }
         try {
             if ($result = $this->_resource->fetch($this->_fetch)) {
                 $this->_key = $this->_iterator++;

@@ -3,24 +3,32 @@ use box\Box;
 use chaos\database\adapter\MySql;
 use chaos\database\adapter\PostgreSql;
 
+date_default_timezone_set('UTC');
+
 $box = box('chaos.spec', new Box());
 
-/*
-$box->service('source.database.mysql', function() {
-    return new MySql([
-        'database' => 'chaos_test',
-        'username' => 'login',
-        'password' => 'password'
-    ]);
-});
+$drivers = PDO::getAvailableDrivers();
 
-$box->service('source.database.postgresql', function() {
-    return new PostgreSql([
-        'database' => 'chaos_test',
-        'username' => 'login',
-        'password' => 'password'
-    ]);
-});
-*/
+if (in_array('mysql', $drivers)) {
+    $box->factory('source.database.mysql', function() {
+        return new MySql([
+            'database' => 'chaos_test',
+            'username' => 'root',
+            'password' => 'root',
+            'encoding' => 'utf8'
+        ]);
+    });
+}
+
+if (in_array('pgsql', $drivers)) {
+    $box->factory('source.database.postgresql', function() {
+        return new PostgreSql([
+            'database' => 'chaos_test',
+            'username' => 'root',
+            'password' => 'root',
+            'encoding' => 'utf8'
+        ]);
+    });
+}
 
 ?>
