@@ -2,6 +2,7 @@
 namespace chaos\database\spec\suite;
 
 use set\Set;
+use chaos\ChaosException;
 use chaos\database\DatabaseException;
 use chaos\Model;
 use chaos\Finders;
@@ -56,8 +57,6 @@ foreach ($connections as $db => $connection) {
                 'connection' => $this->connection
             ]);
 
-            $this->query->order(['id']);
-
         });
 
         afterEach(function() {
@@ -79,7 +78,6 @@ foreach ($connections as $db => $connection) {
                     $this->query = new Query(['model' => $this->gallery]);
                     $this->query->connection();
                 };
-
 
                 expect($closure)->toThrow(new DatabaseException("Error, missing connection for this query."));
 
@@ -107,7 +105,7 @@ foreach ($connections as $db => $connection) {
 
                 $this->fixtures->populate('gallery');
 
-                $result = $this->query->all()->data();
+                $result = $this->query->order(['id'])->all()->data();
                 expect($result)->toEqual([
                     ['id' => '1', 'name' => 'Foo Gallery'],
                     ['id' => '2', 'name' => 'Bar Gallery']
@@ -119,7 +117,7 @@ foreach ($connections as $db => $connection) {
 
                 $this->fixtures->populate('gallery');
 
-                $result = $this->query->fields('name')->all()->data();
+                $result = $this->query->fields('name')->order(['id'])->all()->data();
                 expect($result)->toEqual([
                     ['name' => 'Foo Gallery'],
                     ['name' => 'Bar Gallery']
@@ -135,7 +133,7 @@ foreach ($connections as $db => $connection) {
 
                 $this->fixtures->populate('gallery');
 
-                $result = $this->query->get()->data();
+                $result = $this->query->order(['id'])->get()->data();
                 expect($result)->toEqual([
                     ['id' => '1', 'name' => 'Foo Gallery'],
                     ['id' => '2', 'name' => 'Bar Gallery']
@@ -147,7 +145,7 @@ foreach ($connections as $db => $connection) {
 
                 $this->fixtures->populate('gallery');
 
-                $result = $this->query->get(['return' => 'array']);
+                $result = $this->query->order(['id'])->get(['return' => 'array']);
                 expect($result)->toEqual([
                     ['id' => '1', 'name' => 'Foo Gallery'],
                     ['id' => '2', 'name' => 'Bar Gallery']
@@ -159,7 +157,7 @@ foreach ($connections as $db => $connection) {
 
                 $this->fixtures->populate('gallery');
 
-                $result = $this->query->get(['return' => 'object']);
+                $result = $this->query->order(['id'])->get(['return' => 'object']);
                 expect($result)->toEqual([
                     json_decode(json_encode(['id' => '1', 'name' => 'Foo Gallery']), false),
                     json_decode(json_encode(['id' => '2', 'name' => 'Bar Gallery']), false),
@@ -187,7 +185,7 @@ foreach ($connections as $db => $connection) {
 
                 $this->fixtures->populate('gallery');
 
-                $result = $this->query->first()->data();
+                $result = $this->query->order(['id'])->first()->data();
                 expect($result)->toEqual(['id' => '1', 'name' => 'Foo Gallery']);
 
             });
@@ -200,7 +198,7 @@ foreach ($connections as $db => $connection) {
 
                 $this->fixtures->populate('gallery');
 
-                $this->query->where(['name' => 'Foo Gallery']);
+                $this->query->where(['name' => 'Foo Gallery'])->order(['id']);
 
                 foreach ($this->query as $record) {
                     expect($record->data())->toEqual(['id' => '1', 'name' => 'Foo Gallery']);
@@ -215,7 +213,6 @@ foreach ($connections as $db => $connection) {
             it("delegates the call to the finders", function() {
 
                 $this->fixtures->populate('gallery');
-                $gallery = $this->gallery;
 
                 $finders = new Finders();
                 $finders->set('fooGallery', function($query) {
@@ -223,13 +220,221 @@ foreach ($connections as $db => $connection) {
                 });
 
                 $query = new Query([
-                    'model'      => $gallery,
+                    'model'      => $this->gallery,
                     'connection' => $this->connection,
                     'finders'    => $finders
                 ]);
 
                 $result = $query->fooGallery()->all()->data();
                 expect($result)->toEqual([['id' => '1', 'name' => 'Foo Gallery']]);
+
+            });
+
+            it("throws an exception if no `Finders` has been defined", function() {
+
+                $this->fixtures->populate('gallery');
+
+                $closure = function() {
+                    $this->query->fooGallery();
+                };
+
+                expect($closure)->toThrow(new DatabaseException("No finders instance has been defined."));
+
+            });
+
+            it("throws an exception if the finder method doesn't exist", function() {
+
+                $this->fixtures->populate('gallery');
+
+                $closure = function() {
+                    $query = new Query([
+                        'model'      => $this->gallery,
+                        'connection' => $this->connection,
+                        'finders'    => new Finders()
+                    ]);
+                    $query->fooGallery();
+                };
+
+                expect($closure)->toThrow(new ChaosException("Unexisting finder `'fooGallery'`."));
+
+            });
+
+        });
+
+        describe("->fields()", function() {
+
+            it("sets an aliased COUNT(*) field", function() {
+
+                $this->fixtures->populate('gallery');
+
+                $result = $this->query->fields([
+                    [':as' => [[':plain' => 'COUNT(*)'], [':name' => 'count']]]
+                ])->first();
+
+                expect($result->data())->toEqual(['count' => 2]);
+
+            });
+
+        });
+
+        describe("->where()", function() {
+
+            it("filters out according conditions", function() {
+
+                $this->fixtures->populate('gallery');
+
+                $result = $this->query->where(['name' => 'Foo Gallery'])->get();
+                expect(count($result))->toBe(1);
+
+            });
+
+        });
+
+        describe("->conditions()", function() {
+
+            it("filters out according conditions", function() {
+
+                $this->fixtures->populate('gallery');
+
+                $result = $this->query->conditions(['name' => 'Foo Gallery'])->get();
+                expect(count($result))->toBe(1);
+
+            });
+
+        });
+
+        describe("->group()", function() {
+
+            it("groups by a field name", function() {
+
+                $this->fixtures->populate('image');
+
+                $query = new Query([
+                    'model'      => $this->image,
+                    'connection' => $this->connection
+                ]);
+                $result = $query->fields(['gallery_id'])
+                                ->group('gallery_id')
+                                ->get();
+                expect(count($result))->toBe(2);
+
+            });
+
+        });
+
+        describe("->having()", function() {
+
+            it("filters out according conditions", function() {
+
+                $this->fixtures->populate('gallery');
+
+                $result = $this->query->fields(['name'])
+                                ->group('name')
+                                ->having(['name' => 'Foo Gallery'])
+                                ->get();
+                expect(count($result))->toBe(1);
+
+            });
+
+        });
+
+        describe("->order()", function() {
+
+            it("order by a field name ASC", function() {
+
+                $this->fixtures->populate('gallery');
+
+                $query = new Query([
+                    'model'      => $this->gallery,
+                    'connection' => $this->connection
+                ]);
+                $entity = $query->order(['name' => 'ASC'])->first();
+                expect($entity->name)->toBe('Bar Gallery');
+
+                $entity = $this->query->order('name')->first();
+                expect($entity->name)->toBe('Bar Gallery');
+
+            });
+
+            it("order by a field name DESC", function() {
+
+                $this->fixtures->populate('gallery');
+
+                $entity = $this->query->order(['name' => 'DESC'])->first();
+                expect($entity->name)->toBe('Foo Gallery');
+
+            });
+
+        });
+
+        describe("->with()", function() {
+
+            it("gets/sets with relationship", function() {
+
+                $query = new Query(['connection' => $this->connection]);
+                $query->with('relation1.relation2');
+                $query->with('relation3', [
+                    'conditions' => ['title' => 'hello world']
+                ]);
+                expect($query->with())->toBe([
+                    'relation1.relation2' => [],
+                    'relation3' => [
+                        'conditions' => [
+                            'title' => 'hello world'
+                        ]
+                    ]
+                ]);
+
+            });
+
+            it("loads external relations with a custom condition on tags", function() {
+
+                $this->fixtures->populate('gallery');
+                $this->fixtures->populate('image');
+                $this->fixtures->populate('image_tag');
+                $this->fixtures->populate('tag');
+
+                $galleries = $this->query->with([
+                    'images' => function($query) {
+                        $query->where(['title' => 'Las Vegas']);
+                    }
+                ])->order('id')->all();
+
+                expect(count($galleries[0]->images))->toBe(1);
+                expect(count($galleries[1]->images))->toBe(0);
+
+            });
+
+            it("loads external relations with a custom condition on tags using an array syntax", function() {
+
+                $this->fixtures->populate('gallery');
+                $this->fixtures->populate('image');
+                $this->fixtures->populate('image_tag');
+                $this->fixtures->populate('tag');
+
+                $galleries = $this->query->with([
+                    'images' => ['conditions' => ['title' => 'Las Vegas']]
+                ])->order('id')->all();
+
+                expect(count($galleries[0]->images))->toBe(1);
+                expect(count($galleries[1]->images))->toBe(0);
+
+            });
+
+        });
+
+        describe("->has()", function() {
+
+            it("sets a constraint on a nested relation", function() {
+
+                $this->fixtures->populate('gallery');
+                $this->fixtures->populate('image');
+                $this->fixtures->populate('image_tag');
+                $this->fixtures->populate('tag');
+
+                $galleries = $this->query->has('images.tags', ['name' => 'Science'])->get();
+
+                expect(count($galleries))->toBe(1);
 
             });
 
@@ -241,11 +446,7 @@ foreach ($connections as $db => $connection) {
 
                 $this->fixtures->populate('gallery');
 
-                $query = new Query([
-                    'model'      => $this->gallery,
-                    'connection' => $this->connection
-                ]);
-                $count = $query->count();
+                $count = $this->query->count();
                 expect($count)->toBe(2);
 
             });
@@ -257,6 +458,38 @@ foreach ($connections as $db => $connection) {
             it("returns the alias value of table name by default", function() {
 
                 expect($this->query->alias())->toBe('gallery');
+
+            });
+
+            it("gets/sets some alias values", function() {
+
+                $image = $this->image;
+                $schema = $image::schema();
+
+                expect($this->query->alias('images', $schema))->toBe('image');
+                expect($this->query->alias('images'))->toBe('image');
+
+            });
+
+            it("creates unique aliases when a same table is used multiple times", function() {
+
+                $gallery = $this->gallery;
+                $schema = $gallery::schema();
+
+                expect($this->query->alias())->toBe('gallery');
+                expect($this->query->alias('parent', $schema))->toBe('gallery__0');
+                expect($this->query->alias('parent.parent', $schema))->toBe('gallery__1');
+                expect($this->query->alias('parent.parent.parent', $schema))->toBe('gallery__2');
+
+            });
+
+            it("throws an exception if a relation has no alias defined", function() {
+
+                $closure = function() {
+                    $this->query->alias('images');
+                };
+
+                expect($closure)->toThrow(new DatabaseException("No alias has been defined for `'images'`."));
 
             });
 

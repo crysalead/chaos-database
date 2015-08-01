@@ -3,8 +3,10 @@ namespace chaos\database\spec\suite;
 
 use set\Set;
 use chaos\ChaosException;
+use chaos\database\DatabaseException;
 use chaos\Model;
 use chaos\database\Query;
+use chaos\database\Schema;
 
 use kahlan\plugin\Stub;
 use chaos\database\spec\fixture\Fixtures;
@@ -57,6 +59,64 @@ foreach ($connections as $db => $connection) {
         afterEach(function() {
             $this->fixtures->drop();
             $this->fixtures->reset();
+        });
+
+        describe("->__construct()", function() {
+
+            it("throw an exception when no model is set", function() {
+
+                $closure = function() {
+                    $schema = new Schema(['connection' => $this->connection]);
+                    $schema->query();
+                };
+
+                expect($closure)->toThrow(new DatabaseException("Missing model for this schema, can't create a query."));
+
+            });
+
+        });
+
+        describe("->create()/->drop()", function() {
+
+            it("creates/drop a table", function() {
+
+                $this->fixtures->drop();
+
+                $schema = new Schema([
+                    'connection' => $this->connection,
+                    'source'     => 'test_table'
+                ]);
+                $schema->set('id', ['type' => 'serial']);
+
+                $schema->create();
+                expect($this->connection->sources())->toBe(['test_table' => 'test_table']);
+                $schema->drop();
+                expect($this->connection->sources())->toBe([]);
+
+            });
+
+            it("throw an exception when source is not set", function() {
+
+                $closure = function() {
+                    $schema = new Schema(['connection' => $this->connection]);
+                    $schema->create();
+                };
+
+                expect($closure)->toThrow(new DatabaseException("Missing table name for this schema."));
+
+            });
+
+            it("throw an exception when source is not set", function() {
+
+                $closure = function() {
+                    $schema = new Schema(['connection' => $this->connection]);
+                    $schema->drop();
+                };
+
+                expect($closure)->toThrow(new DatabaseException("Missing table name for this schema."));
+
+            });
+
         });
 
         context("with all data populated", function() {
@@ -152,7 +212,7 @@ foreach ($connections as $db => $connection) {
 
         describe("->save()", function() {
 
-            it("saves an entity", function() {
+            it("saves and updates an entity", function() {
 
                 $data = [
                     'name' => 'amiga_1200.jpg',
@@ -165,6 +225,26 @@ foreach ($connections as $db => $connection) {
                 expect($image->exists())->toBe(true);
                 expect($image->primaryKey())->not->toBe(null);
 
+                $reloaded = $model::id($image->primaryKey());
+                expect($reloaded->data())->toEqual([
+                    'id'         => $image->primaryKey(),
+                    'gallery_id' => null,
+                    'name'       => 'amiga_1200.jpg',
+                    'title'      => 'Amiga 1200'
+                ]);
+
+                $reloaded->title = 'Amiga 1260';
+                expect($reloaded->save())->toBe(true);
+                expect($reloaded->exists())->toBe(true);
+                expect($reloaded->primaryKey())->toBe($image->primaryKey());
+
+                $persisted = $model::id($reloaded->primaryKey());
+                expect($persisted->data())->toEqual([
+                    'id'         => $reloaded->primaryKey(),
+                    'gallery_id' => null,
+                    'name'       => 'amiga_1200.jpg',
+                    'title'      => 'Amiga 1260'
+                ]);
             });
 
             it("saves a hasMany relationship", function() {
@@ -236,37 +316,68 @@ foreach ($connections as $db => $connection) {
 
             });
 
-            it("saves a hasManyTrough relationship", function() {
+            context("with a hasManyTrough relationship", function() {
 
-                $data = [
-                    'name' => 'amiga_1200.jpg',
-                    'title' => 'Amiga 1200',
-                    'gallery' => [
-                        'name' => 'Foo Gallery'
-                    ],
-                    'tags' => [
-                        ['name' => 'tag1'],
-                        ['name' => 'tag2'],
-                        ['name' => 'tag3']
-                    ]
-                ];
+                beforeEach(function() {
 
-                $model = $this->image;
-                $image = $model::create($data);
-                expect($image->save())->toBe(true);
+                    $data = [
+                        'name' => 'amiga_1200.jpg',
+                        'title' => 'Amiga 1200',
+                        'gallery' => [
+                            'name' => 'Foo Gallery'
+                        ],
+                        'tags' => [
+                            ['name' => 'tag1'],
+                            ['name' => 'tag2'],
+                            ['name' => 'tag3']
+                        ]
+                    ];
 
-                expect($image->primaryKey())->not->toBe(null);
-                expect($image->images_tags)->toHaveLength(3);
-                expect($image->tags)->toHaveLength(3);
+                    $model = $this->image;
+                    $this->entity = $model::create($data);
+                    $this->entity->save();
 
-                foreach ($image->images_tags as $index => $image_tag) {
-                    expect($image_tag->tag_id)->toBe($image_tag->tag->primaryKey());
-                    expect($image_tag->image_id)->toBe($image->primaryKey());
-                    expect($image_tag->tag)->toBe($image->tags[$index]);
-                }
+                });
 
-                $result = $model::id($image->primaryKey(),  ['with' => ['gallery', 'tags']]);
-                expect($image->data())->toEqual($result->data());
+                it("saves a hasManyTrough relationship", function() {
+
+                    expect($this->entity->primaryKey())->not->toBe(null);
+                    expect($this->entity->images_tags)->toHaveLength(3);
+                    expect($this->entity->tags)->toHaveLength(3);
+
+                    foreach ($this->entity->images_tags as $index => $image_tag) {
+                        expect($image_tag->tag_id)->toBe($image_tag->tag->primaryKey());
+                        expect($image_tag->image_id)->toBe($this->entity->primaryKey());
+                        expect($image_tag->tag)->toBe($this->entity->tags[$index]);
+                    }
+
+                    $model = $this->image;
+                    $result = $model::id($this->entity->primaryKey(),  ['with' => ['gallery', 'tags']]);
+                    expect($this->entity->data())->toEqual($result->data());
+
+                });
+
+                it("appends a hasManyTrough entity", function() {
+
+                    $model = $this->image;
+                    $reloaded = $model::id($this->entity->primaryKey());
+                    $reloaded->tags[] = ['name' => 'tag4'];
+                    expect(count($reloaded->tags))->toBe(4);
+
+                    unset($reloaded->tags[0]);
+                    expect($reloaded->save())->toBe(true);
+
+                    $persisted = $model::find()->where(['id' => $reloaded->primaryKey()])->with('tags')->first();
+
+                    expect(count($persisted->tags))->toBe(3);
+
+                    foreach ($persisted->images_tags as $index => $image_tag) {
+                        expect($image_tag->tag_id)->toBe($image_tag->tag->primaryKey());
+                        expect($image_tag->image_id)->toBe($persisted->primaryKey());
+                        expect($image_tag->tag)->toBe($persisted->tags[$index]);
+                    }
+
+                });
 
             });
 
