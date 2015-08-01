@@ -137,7 +137,7 @@ foreach ($connections as $db => $connection) {
 
                     $model = $this->gallery;
                     $schema = $model::schema();
-                    $galleries = $model::all(['order' => 'id']);
+                    $galleries = $model::all();
                     $schema->embed($galleries, ['images']);
 
                     foreach ($galleries as $gallery) {
@@ -152,7 +152,7 @@ foreach ($connections as $db => $connection) {
 
                     $model = $this->image;
                     $schema = $model::schema();
-                    $images = $model::all(['order' => 'id']);
+                    $images = $model::all();
                     $schema->embed($images, ['gallery']);
 
                     foreach ($images as $image) {
@@ -165,7 +165,7 @@ foreach ($connections as $db => $connection) {
 
                     $model = $this->gallery;
                     $schema = $model::schema();
-                    $galleries = $model::all(['order' => 'id']);
+                    $galleries = $model::all();
                     $schema->embed($galleries, ['detail', 'images']);
 
                     foreach ($galleries as $gallery) {
@@ -178,7 +178,7 @@ foreach ($connections as $db => $connection) {
 
                     $model = $this->image;
                     $schema = $model::schema();
-                    $images = $model::all(['order' => 'id']);
+                    $images = $model::all();
                     $schema->embed($images, ['tags']);
 
                     foreach ($images as $image) {
@@ -192,7 +192,7 @@ foreach ($connections as $db => $connection) {
 
                     $model = $this->image;
                     $schema = $model::schema();
-                    $images = $model::all(['order' => 'id']);
+                    $images = $model::all();
                     $schema->embed($images, ['tags.images']);
 
                     foreach ($images as $image) {

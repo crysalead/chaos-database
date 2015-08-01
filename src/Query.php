@@ -230,7 +230,7 @@ class Query implements IteratorAggregate
             }
         }
 
-        $model::schema()->embed($collection, $this->_with, $options);
+        $model::schema()->embed($collection, $this->_with, ['fetchOptions' => $options]);
         return $collection;
     }
 
