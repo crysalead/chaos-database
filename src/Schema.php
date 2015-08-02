@@ -11,7 +11,6 @@ class Schema extends \chaos\Schema
      * @var array
      */
     protected $_classes = [
-        'collector'      => 'chaos\Collector',
         'relationship'   => 'chaos\Relationship',
         'belongsTo'      => 'chaos\relationship\BelongsTo',
         'hasOne'         => 'chaos\relationship\HasOne',

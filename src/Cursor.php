@@ -4,6 +4,7 @@ namespace chaos\database;
 use PDO;
 use PDOStatement;
 use PDOException;
+use chaos\database\DatabaseException;
 
 /**
  * This class is a wrapper around the `PDOStatement` returned and can be used to iterate over it.
@@ -39,6 +40,17 @@ class Cursor extends \chaos\Cursor
         $config += $defaults;
 
         $this->_fetch = $config['fetch'];
+    }
+
+    /**
+     * Rewinds the cursor to its first position.
+     */
+    public function rewind()
+    {
+        if ($this->_started && $this->_resource) {
+            throw new DatabaseException("PDO statement tesource doesn't support rewind operation.");
+        }
+        parent::rewind();
     }
 
     /**

@@ -182,13 +182,14 @@ class Query implements IteratorAggregate
     public function get($options = [])
     {
         $defaults = [
-            'return' => 'entity',
-            'fetch'  => PDO::FETCH_ASSOC
+            'collector' => null,
+            'return'    => 'entity',
+            'fetch'     => PDO::FETCH_ASSOC
         ];
         $options += $defaults;
 
         $class = $this->_classes['collector'];
-        $options['collector'] = isset($options['collector']) ? $options['collector'] : new $class();
+        $collector = $options['collector'] = $options['collector'] ?: new $class();
 
         $this->_applyHas();
 
@@ -207,57 +208,34 @@ class Query implements IteratorAggregate
 
         switch ($return) {
             case 'entity':
+                $schema = $model::schema();
+                $source = $schema->source();
+                $primaryKey = $schema->primaryKey();
+                $collection = $model::create($collection, ['collector' => $collector, 'type' => 'set']);
                 foreach ($cursor as $key => $record) {
-                    $collection[] = $model::create($record, ['exists' => $noFields ? true : null, 'autoreload' => false]);
+                    if (!empty($record[$primaryKey]) && $collector->exists($source, $record[$primaryKey])) {
+                        $collection[] = $collector->get($source, $record[$primaryKey]);
+                    } else {
+                        $collection[] = $model::create($record, [
+                            'collector' => $collector,
+                            'exists' => $noFields ? true : null,
+                            'autoreload' => false
+                        ]);
+                    }
                 }
-                $collection = $model::create($collection, ['type' => 'set']);
-            break;
+                break;
             case 'array':
             case 'object':
                 foreach ($cursor as $key => $record) {
                     $collection[] = $record;
                 }
-            break;
+                break;
             default:
                 throw new DatabaseException("Invalid `'{$options['return']}'` mode as `'return'` value");
-            break;
-        }
-
-        if ($collection) {
-            $id = $model::schema()->primaryKey();
-            if ($id && isset($collection[0]->{$id})) {
-                $collection = $this->_collect($collection, $options);
-            }
+                break;
         }
 
         $model::schema()->embed($collection, $this->_with, ['fetchOptions' => $options]);
-        return $collection;
-    }
-
-    /**
-     * Collects data to avoid entities duplication.
-     *
-     * @param  mixed  $collection A collection of entities.
-     * @return mixed              A collection of entities where duplicates has been replaced by collected one.
-     */
-    protected function _collect($collection, $options)
-    {
-        if (!$collector = $options['collector']) {
-            return $collection;
-        }
-        $model = $this->_model;
-        $schema = $model::schema();
-        $primaryKey = $schema->primaryKey();
-        $source = $schema->source();
-
-        foreach ($collection as $index => $item) {
-            $id = is_object($item) ? $item->{$primaryKey} : $item[$primaryKey];
-            if ($collector->has($source, $id)) {
-                $collection[$index] = $collector->get($source, $id);
-            } else {
-                $collector->set($source, $id, $item);
-            }
-        }
         return $collection;
     }
 

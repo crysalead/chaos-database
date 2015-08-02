@@ -204,6 +204,81 @@ foreach ($connections as $db => $connection) {
                             }
                         }
                     }
+
+                });
+
+            });
+
+            context("using the lazy strategy", function() {
+
+                it("loads a hasMany relationship", function() {
+
+                    $model = $this->gallery;
+                    $schema = $model::schema();
+                    $galleries = $model::all();
+
+                    foreach ($galleries as $gallery) {
+                        foreach ($gallery->images as $image) {
+                            expect($gallery->id)->toBe($image->gallery_id);
+                        }
+                    }
+
+                });
+
+                it("loads a belongsTo relationship", function() {
+
+                    $model = $this->image;
+                    $schema = $model::schema();
+                    $images = $model::all();
+
+                    foreach ($images as $image) {
+                        expect($image->gallery_id)->toBe($image->gallery->id);
+                    }
+
+                });
+
+                it("loads a hasOne relationship", function() {
+
+                    $model = $this->gallery;
+                    $schema = $model::schema();
+                    $galleries = $model::all();
+
+                    foreach ($galleries as $gallery) {
+                        expect($gallery->id)->toBe($gallery->detail->gallery_id);
+                    }
+
+                });
+
+                it("loads a hasManyTrough relationship", function() {
+
+                    $model = $this->image;
+                    $schema = $model::schema();
+                    $images = $model::all();
+
+                    foreach ($images as $image) {
+                        foreach ($image->images_tags as $index => $image_tag) {
+                            expect($image_tag->tag)->toBe($image->tags[$index]);
+                        }
+                    }
+
+                });
+
+                it("loads nested hasManyTrough relationship", function() {
+
+                    $model = $this->image;
+                    $schema = $model::schema();
+                    $images = $model::all();
+
+                    foreach ($images as $image) {
+                        foreach ($image->images_tags as $index => $image_tag) {
+                            expect($image_tag->tag)->toBe($image->tags[$index]);
+
+                            foreach ($image_tag->tag->images_tags as $index2 => $image_tag2) {
+                                expect($image_tag2->image)->toBe($image_tag->tag->images[$index2]);
+                            }
+                        }
+                    }
+
                 });
 
             });
