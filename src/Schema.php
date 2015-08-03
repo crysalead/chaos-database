@@ -69,11 +69,11 @@ class Schema extends \chaos\Schema
     /**
      * Inserts a records  with the given data.
      *
-     * @param  mixed $data       Typically an array of key/value pairs that specify the new data with which
-     *                           the records will be updated. For SQL databases, this can optionally be
-     *                           an SQL fragment representing the `SET` clause of an `UPDATE` query.
-     * @param  array $options    Any database-specific options to use when performing the operation.
-     * @return boolean           Returns `true` if the update operation succeeded, otherwise `false`.
+     * @param  mixed   $data       Typically an array of key/value pairs that specify the new data with which
+     *                             the records will be updated. For SQL databases, this can optionally be
+     *                             an SQL fragment representing the `SET` clause of an `UPDATE` query.
+     * @param  array   $options    Any database-specific options to use when performing the operation.
+     * @return boolean             Returns `true` if the update operation succeeded, otherwise `false`.
      */
     public function insert($data, $options = [])
     {
@@ -111,14 +111,14 @@ class Schema extends \chaos\Schema
      * array or `null`), all the data in the backend data source (i.e. table or collection) _will_
      * be deleted.
      *
-     * @param mixed $conditions An array of key/value pairs representing the scope of the records or
-     *              documents to be deleted.
-     * @param array $options Any database-specific options to use when performing the operation. See
-     *              the `delete()` method of the corresponding backend database for available
-     *              options.
-     * @return boolean Returns `true` if the remove operation succeeded, otherwise `false`.
+     * @param mixed    $conditions An array of key/value pairs representing the scope of the records or
+     *                             documents to be deleted.
+     * @param array    $options    Any database-specific options to use when performing the operation. See
+     *                             the `delete()` method of the corresponding backend database for available
+     *                             options.
+     * @return boolean             Returns `true` if the remove operation succeeded, otherwise `false`.
      */
-    public function remove($conditions = [], $options = [])
+    public function delete($conditions = [], $options = [])
     {
         $delete = $this->connection()->dialect()->statement('delete');
 
