@@ -97,8 +97,7 @@ class Query implements IteratorAggregate
             'connection' => null,
             'model'      => null,
             'finders'    => null,
-            'query'      => [],
-            'handler'    => null,
+            'query'      => []
         ];
         $config = Set::merge($defaults, $config);
         $model = $this->_model = $config['model'];
@@ -113,10 +112,6 @@ class Query implements IteratorAggregate
         }
         foreach ($config['query'] as $key => $value) {
             $this->{$key}($value);
-        }
-        $handler = $config['handler'];
-        if (is_callable($handler)) {
-            return $handler($this);
         }
     }
 
@@ -360,6 +355,20 @@ class Query implements IteratorAggregate
         $fields = is_array($fields) ? $fields : func_get_args();
         $fields = $this->statement()->dialect()->prefix($fields, $this->alias());
         $this->statement()->order($fields);
+        return $this;
+    }
+
+    /**
+     * Applies a query handler
+     *
+     * @param  Closure $closure A closure.
+     * @return object           Returns `$this`.
+     */
+    public function handler($closure)
+    {
+        if ($closure && is_callable($closure)) {
+            $closure($this);
+        }
         return $this;
     }
 
