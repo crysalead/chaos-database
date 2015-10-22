@@ -342,7 +342,7 @@ foreach ($connections as $db => $connection) {
                     expect($image->gallery_id)->toBe($gallery->primaryKey());
                 }
 
-                $result = $model::id($gallery->primaryKey(),  ['with' => ['images']]);
+                $result = $model::id($gallery->primaryKey(),  ['embed' => ['images']]);
                 expect($gallery->data())->toEqual($result->data());
 
             });
@@ -364,7 +364,7 @@ foreach ($connections as $db => $connection) {
                 expect($image->primaryKey())->not->toBe(null);
                 expect($image->gallery_id)->toBe($image->gallery->primaryKey());
 
-                $result = $model::id($image->primaryKey(),  ['with' => ['gallery']]);
+                $result = $model::id($image->primaryKey(),  ['embed' => ['gallery']]);
                 expect($image->data())->toEqual($result->data());
 
             });
@@ -386,7 +386,7 @@ foreach ($connections as $db => $connection) {
                 expect($gallery->primaryKey())->not->toBe(null);
                 expect($gallery->detail->gallery_id)->toBe($gallery->primaryKey());
 
-                $result = $model::id($gallery->primaryKey(),  ['with' => ['detail']]);
+                $result = $model::id($gallery->primaryKey(),  ['embed' => ['detail']]);
                 expect($gallery->data())->toEqual($result->data());
 
             });
@@ -427,7 +427,7 @@ foreach ($connections as $db => $connection) {
                     }
 
                     $model = $this->image;
-                    $result = $model::id($this->entity->primaryKey(),  ['with' => ['gallery', 'tags']]);
+                    $result = $model::id($this->entity->primaryKey(),  ['embed' => ['gallery', 'tags']]);
                     expect($this->entity->data())->toEqual($result->data());
 
                 });
@@ -442,7 +442,7 @@ foreach ($connections as $db => $connection) {
                     unset($reloaded->tags[0]);
                     expect($reloaded->save())->toBe(true);
 
-                    $persisted = $model::find()->where(['id' => $reloaded->primaryKey()])->with('tags')->first();
+                    $persisted = $model::find()->where(['id' => $reloaded->primaryKey()])->embed('tags')->first();
 
                     expect(count($persisted->tags))->toBe(3);
 
@@ -475,7 +475,7 @@ foreach ($connections as $db => $connection) {
 
                 $model = $this->gallery;
                 $gallery = $model::create($data);
-                expect($gallery->save(['with' => 'images.tags']))->toBe(true);
+                expect($gallery->save(['embed' => 'images.tags']))->toBe(true);
 
                 expect($gallery->primaryKey())->not->toBe(null);
                 expect($gallery->images)->toHaveLength(1);
@@ -492,7 +492,7 @@ foreach ($connections as $db => $connection) {
                     }
                 }
 
-                $result = $model::id($gallery->primaryKey(),  ['with' => ['images.tags']]);
+                $result = $model::id($gallery->primaryKey(),  ['embed' => ['images.tags']]);
                 expect($gallery->data())->toEqual($result->data());
 
             });
@@ -567,7 +567,7 @@ foreach ($connections as $db => $connection) {
 
                 expect($image)->toReceive('save')->with([
                     'custom' => 'option',
-                    'with' => false
+                    'embed' => false
                 ]);
 
                 expect($image->persist(['custom' => 'option']))->toBe(true);

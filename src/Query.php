@@ -74,7 +74,7 @@ class Query implements IteratorAggregate
      *
      * @var array
      */
-    protected $_with = [];
+    protected $_embed = [];
 
     /**
      * Some conditions over some relations.
@@ -230,7 +230,7 @@ class Query implements IteratorAggregate
                 break;
         }
 
-        $model::schema()->embed($collection, $this->_with, ['fetchOptions' => $options]);
+        $model::schema()->embed($collection, $this->_embed, ['fetchOptions' => $options]);
         return $collection;
     }
 
@@ -375,19 +375,19 @@ class Query implements IteratorAggregate
     /**
      * Sets the relations to retrieve.
      *
-     * @param  array  $with The relations to load with the query.
-     * @return object       Returns `$this`.
+     * @param  array  $embed The relations to load with the query.
+     * @return object        Returns `$this`.
      */
-    public function with($with = null, $conditions = [])
+    public function embed($embed = null, $conditions = [])
     {
-        if (!$with) {
-            return $this->_with;
+        if (!$embed) {
+            return $this->_embed;
         }
-        if (!is_array($with)) {
-            $with = [$with => $conditions];
+        if (!is_array($embed)) {
+            $embed = [$embed => $conditions];
         }
-        $with = Set::normalize($with);
-        $this->_with = Set::merge($this->_with, $with);
+        $embed = Set::normalize($embed);
+        $this->_embed = Set::merge($this->_embed, $embed);
         return $this;
     }
 

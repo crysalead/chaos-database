@@ -367,16 +367,16 @@ foreach ($connections as $db => $connection) {
 
         });
 
-        describe("->with()", function() {
+        describe("->embed()", function() {
 
             it("gets/sets with relationship", function() {
 
                 $query = new Query(['connection' => $this->connection]);
-                $query->with('relation1.relation2');
-                $query->with('relation3', [
+                $query->embed('relation1.relation2');
+                $query->embed('relation3', [
                     'conditions' => ['title' => 'hello world']
                 ]);
-                expect($query->with())->toBe([
+                expect($query->embed())->toBe([
                     'relation1.relation2' => [],
                     'relation3' => [
                         'conditions' => [
@@ -387,14 +387,14 @@ foreach ($connections as $db => $connection) {
 
             });
 
-            it("loads external relations with a custom condition on tags", function() {
+            it("loads external relations embed a custom condition on tags", function() {
 
                 $this->fixtures->populate('gallery');
                 $this->fixtures->populate('image');
                 $this->fixtures->populate('image_tag');
                 $this->fixtures->populate('tag');
 
-                $galleries = $this->query->with([
+                $galleries = $this->query->embed([
                     'images' => function($query) {
                         $query->where(['title' => 'Las Vegas']);
                     }
@@ -412,7 +412,7 @@ foreach ($connections as $db => $connection) {
                 $this->fixtures->populate('image_tag');
                 $this->fixtures->populate('tag');
 
-                $galleries = $this->query->with([
+                $galleries = $this->query->embed([
                     'images' => ['conditions' => ['title' => 'Las Vegas']]
                 ])->order('id')->all();
 
