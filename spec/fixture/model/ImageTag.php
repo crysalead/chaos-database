@@ -5,7 +5,7 @@ class ImageTag extends \chaos\Model
 {
     protected static $_schema = 'chaos\database\Schema';
 
-    protected static function _schema($schema)
+    protected static function _define($schema)
     {
         $schema->set('id', ['type' => 'serial']);
         $schema->set('image_id', ['type' => 'integer']);
