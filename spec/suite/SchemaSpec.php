@@ -61,7 +61,7 @@ foreach ($connections as $db => $connection) {
             $this->fixtures->reset();
         });
 
-        describe("->__construct()", function() {
+        describe("->query()", function() {
 
             it("throw an exception when no model is set", function() {
 
