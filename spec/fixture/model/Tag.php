@@ -1,26 +1,18 @@
 <?php
 namespace chaos\database\spec\fixture\model;
 
-class Tag extends \chaos\Model
+class Tag extends BaseModel
 {
-    protected static $_schema = 'chaos\database\Schema';
-
     protected static function _define($schema)
     {
         $schema->set('id', ['type' => 'serial']);
         $schema->set('name', ['type' => 'string', 'length' => 50]);
 
-        $schema->bind('images_tags', [
-            'relation' => 'hasMany',
-            'to'       => 'chaos\database\spec\fixture\model\ImageTag',
-            'key'      => ['id' => 'tag_id']
+        $schema->hasMany('images_tags', ImageTag::class, [
+            'key' => ['id' => 'tag_id']
         ]);
 
-        $schema->bind('images', [
-            'relation' => 'hasManyThrough',
-            'through'  => 'images_tags',
-            'using'    => 'image'
-        ]);
+        $schema->hasManyThrough('images', 'images_tags', 'image');
     }
 
 }
