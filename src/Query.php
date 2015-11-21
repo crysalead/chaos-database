@@ -147,9 +147,19 @@ class Query implements IteratorAggregate
     }
 
     /**
+     * Gets the model.
+     *
+     * @return object Returns the fully namespaced model class name.
+     */
+    public function model()
+    {
+        return $this->_model;
+    }
+
+    /**
      * Gets the query statement.
      *
-     * @return object    Returns a connection instance.
+     * @return object Returns a connection instance.
      */
     public function statement()
     {
@@ -199,7 +209,7 @@ class Query implements IteratorAggregate
             'fetch' => $return === 'object' ? PDO::FETCH_OBJ : $options['fetch']
         ]);
 
-        $model = $this->_model;
+        $model = $this->model();
 
         switch ($return) {
             case 'entity':
@@ -262,7 +272,7 @@ class Query implements IteratorAggregate
      */
     public function count()
     {
-        $model = $this->_model;
+        $model = $this->model();
         $schema = $model::schema();
         $this->statement()->fields([':plain' => 'COUNT(*)']);
         $cursor = $this->connection()->query($this->statement()->toString());
@@ -280,7 +290,7 @@ class Query implements IteratorAggregate
     {
         $fields = is_array($fields) && func_num_args() === 1 ? $fields : func_get_args();
 
-        $model = $this->_model;
+        $model = $this->model();
         $schema = $model::schema();
 
         foreach ($fields as $key => $value) {
@@ -439,7 +449,7 @@ class Query implements IteratorAggregate
     protected function _applyHas()
     {
         $tree = Set::expand(array_fill_keys(array_keys($this->has()), false));
-        $this->_applyJoins($this->_model, $tree, '', $this->alias());
+        $this->_applyJoins($this->model(), $tree, '', $this->alias());
         foreach ($this->has() as $path => $conditions) {
             $this->where($conditions, $this->alias($path));
         }
