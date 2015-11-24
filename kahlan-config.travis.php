@@ -2,6 +2,7 @@
 use box\Box;
 use chaos\database\adapter\MySql;
 use chaos\database\adapter\PostgreSql;
+use chaos\database\adapter\Sqlite;
 
 date_default_timezone_set('UTC');
 
@@ -31,6 +32,12 @@ if (in_array('pgsql', $drivers)) {
             'password' => '',
             'encoding' => 'utf8'
         ]);
+    });
+}
+
+if (in_array('sqlite', $drivers)) {
+    $box->factory('source.database.sqlite', function() {
+        return new Sqlite();
     });
 }
 
