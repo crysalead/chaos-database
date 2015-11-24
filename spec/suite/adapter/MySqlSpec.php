@@ -24,17 +24,21 @@ describe("MySql", function() {
 
         it("returns `true` for enabled features, false otherwise.", function() {
 
-            expect(MySql::enabled())->toBe(true);
+            expect(MySql::enabled())->toEqual([
+                'arrays'       => false,
+                'transactions' => true,
+                'booleans'     => true
+            ]);
             expect(MySql::enabled('arrays'))->toBe(false);
             expect(MySql::enabled('transactions'))->toBe(true);
             expect(MySql::enabled('booleans'))->toBe(true);
 
         });
 
-        it("returns `false` if the extension is not loaded.", function() {
+        it("throws an exception if the extension is not loaded.", function() {
 
             Monkey::patch('extension_loaded', function() { return false; });
-            expect(MySql::enabled())->toBe(false);
+            expect(function() { MySql::enabled(); })->toThrow(new DatabaseException("The PDO MySQL extension is not installed."));
 
         });
 
@@ -108,7 +112,7 @@ describe("MySql", function() {
 
             $gallery = $this->adapter->describe('gallery');
 
-            expect($gallery->field('id'))->toBe([
+            expect($gallery->field('id'))->toEqual([
                 'use'     => 'int',
                 'type'    => 'integer',
                 'length'  => 11,
@@ -117,7 +121,7 @@ describe("MySql", function() {
                 'array'   => false
             ]);
 
-            expect($gallery->field('name'))->toBe([
+            expect($gallery->field('name'))->toEqual([
                 'use'     => 'varchar',
                 'type'    => 'string',
                 'length'  => 128,
@@ -126,7 +130,7 @@ describe("MySql", function() {
                 'array'   => false
             ]);
 
-            expect($gallery->field('active'))->toBe([
+            expect($gallery->field('active'))->toEqual([
                 'use'     => 'tinyint',
                 'type'    => 'boolean',
                 'length'  => 1,
@@ -135,7 +139,7 @@ describe("MySql", function() {
                 'array'   => false
             ]);
 
-            expect($gallery->field('inactive'))->toBe([
+            expect($gallery->field('inactive'))->toEqual([
                 'use'     => 'tinyint',
                 'type'    => 'boolean',
                 'length'  => 1,
@@ -144,7 +148,7 @@ describe("MySql", function() {
                 'array'   => false
             ]);
 
-            expect($gallery->field('money'))->toBe([
+            expect($gallery->field('money'))->toEqual([
                 'use'       => 'decimal',
                 'type'      => 'decimal',
                 'length'    => 10,
@@ -154,7 +158,7 @@ describe("MySql", function() {
                 'array'     => false
             ]);
 
-            expect($gallery->field('created'))->toBe([
+            expect($gallery->field('created'))->toEqual([
                 'use'     => 'timestamp',
                 'type'    => 'datetime',
                 'null'    => true,

@@ -16,19 +16,23 @@ class MySql extends \chaos\database\Database
      *
      * @param  string  $feature Test for support for a specific feature, i.e. `"transactions"`
      *                          or `"arrays"`.
-     * @return boolean          Returns `true` if the particular feature (or if MySQL) support
-     *                          is enabled, otherwise `false`.
+     * @return mixed            Returns a boolean value indicating if a particular feature is supported or not.
+     *                          Returns an array of all supported features when called with no parameter.
      */
     public static function enabled($feature = null)
     {
-        if (!$feature) {
-            return extension_loaded('pdo_mysql');
+        if (!extension_loaded('pdo_mysql')) {
+            throw new DatabaseException("The PDO MySQL extension is not installed.");
         }
+
         $features = [
             'arrays' => false,
             'transactions' => true,
             'booleans' => true
         ];
+        if (!func_num_args()) {
+            return $features;
+        }
         return isset($features[$feature]) ? $features[$feature] : null;
     }
 
@@ -77,7 +81,7 @@ class MySql extends \chaos\database\Database
             return false;
         }
 
-        $info = $this->_pdo->getAttribute(PDO::ATTR_SERVER_VERSION);
+        $info = $this->client()->getAttribute(PDO::ATTR_SERVER_VERSION);
         $this->_alias = (boolean) version_compare($info, "4.1", ">=");
         return true;
     }
@@ -99,73 +103,57 @@ class MySql extends \chaos\database\Database
     }
 
     /**
-     * Gets the column schema for a given MySQL table.
+     * Extracts fields definitions of a table.
      *
-     * @param  mixed  $name   Specifies the table name for which the schema should be returned.
-     * @param  array  $fields Any schema data pre-defined by the model.
-     * @param  array  $meta
-     * @return object         Returns a shema definition.
+     * @param  string $name The table name.
+     * @return array        The fields definitions.
      */
-    public function describe($name,  $fields = [], $meta = [])
+    public function fields($name)
     {
-        $schema = $this->_classes['schema'];
+        $fields = [];
+        $columns = $this->query("DESCRIBE {$name}");
 
-        if (func_num_args() === 1) {
-            $columns = $this->query("DESCRIBE {$name}");
+        foreach ($columns as $column) {
+            $field = $this->_field($column);
+            $default = $column['Default'];
 
-            foreach ($columns as $column) {
-                $field = $this->_column($column['Type']);
-                $default = $column['Default'];
-
-                switch ($field['type']) {
-                    case 'boolean':
-                        if ($default === '1') {
-                            $default = true;
-                        }
-                        if ($default === '0') {
-                            $default = false;
-                        }
-                        break;
-                    case 'datetime':
-                        $default = $default !== 'CURRENT_TIMESTAMP' ? $default : null;
-                        break;
-                }
-
-                $fields[$column['Field']] = $field + [
-                    'null'     => ($column['Null'] === 'YES' ? true : false),
-                    'default'  => $default
-                ];
+            switch ($field['type']) {
+                case 'boolean':
+                    $default = $default === '1';
+                    break;
+                case 'datetime':
+                    $default = $default !== 'CURRENT_TIMESTAMP' ? $default : null;
+                    break;
             }
-        }
 
-        return new $schema([
-            'connection' => $this,
-            'source'     => $name,
-            'fields'     => $fields,
-            'meta'        => $meta
-        ]);
+            $fields[$column['Field']] = $field + [
+                'null'     => ($column['Null'] === 'YES' ? true : false),
+                'default'  => $default
+            ];
+        }
+        return $fields;
     }
 
     /**
      * Converts database-layer column types to basic types.
      *
-     * @param  string $real Real database-layer column type (i.e. `"varchar(255)"`)
-     * @return array        Column type (i.e. "string") plus 'length' when appropriate.
+     * @param  string $column Database-layer column.
+     * @return array          A generic field.
      */
-    protected function _column($real)
+    protected function _field($column)
     {
-        preg_match('/(?P<type>\w+)(?:\((?P<length>[\d,]+)\))?/', $real, $column);
-        $column = array_intersect_key($column, ['type' => null, 'length' => null]);
-        $column = array_merge(['use' => $column['type']], $column);
+        preg_match('/(?P<type>\w+)(?:\((?P<length>[\d,]+)\))?/', $column['Type'], $field);
+        $field = array_intersect_key($field, ['type' => null, 'length' => null]);
+        $field = array_merge(['use' => $field['type']], $field);
 
-        if (isset($column['length']) && $column['length']) {
-            $length = explode(',', $column['length']) + [null, null];
-            $column['length'] = $length[0] ? intval($length[0]) : null;
-            $length[1] ? $column['precision'] = intval($length[1]) : null;
+        if (isset($field['length']) && $field['length']) {
+            $length = explode(',', $field['length']) + [null, null];
+            $field['length'] = $length[0] ? intval($length[0]) : null;
+            $length[1] ? $field['precision'] = intval($length[1]) : null;
         }
 
-        $column['type'] = $this->dialect()->mapped($column);
-        return $column;
+        $field['type'] = $this->dialect()->mapped($field);
+        return $field;
     }
 
     /**
@@ -178,13 +166,13 @@ class MySql extends \chaos\database\Database
     public function encoding($encoding = null)
     {
         if (!$encoding) {
-            $query = $this->_pdo->query("SHOW VARIABLES LIKE 'character_set_client'");
+            $query = $this->client()->query("SHOW VARIABLES LIKE 'character_set_client'");
             $encoding = $query->fetchColumn(1);
             return strtolower($encoding);
         }
 
         try {
-            $this->_pdo->exec("SET NAMES '{$encoding}'");
+            $this->client()->exec("SET NAMES '{$encoding}'");
             return true;
         } catch (PDOException $e) {
             return false;

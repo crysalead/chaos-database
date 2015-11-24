@@ -11,15 +11,15 @@ describe("Database", function() {
 
     beforeEach(function() {
 
-        $this->pdo = Stub::create();
-        Stub::on($this->pdo)->method('quote', function($string) {
+        $this->client = Stub::create();
+        Stub::on($this->client)->method('quote', function($string) {
             return "'{$string}'";
         });
 
         $this->database = Stub::create([
             'extends' => 'chaos\database\Database',
             'params'  => [[
-                'pdo'     => $this->pdo
+                'client' => $this->client
             ]],
             'methods' => ['exception']
         ]);
@@ -56,11 +56,11 @@ describe("Database", function() {
 
     });
 
-    describe("->driver()", function() {
+    describe("->client()", function() {
 
         it("returns the PDO driver", function() {
 
-            expect($this->database->driver())->toBe($this->pdo);
+            expect($this->database->client())->toBe($this->client);
 
         });
 
@@ -233,13 +233,13 @@ describe("Database", function() {
 
         it("retuns the last error", function() {
 
-            Stub::on($this->pdo)->method('errorInfo', function() {
+            Stub::on($this->client)->method('errorInfo', function() {
                 return ['0000', null, null];
             });
 
             expect($this->database->errmsg())->toBe('');
 
-            Stub::on($this->pdo)->method('errorInfo', function() {
+            Stub::on($this->client)->method('errorInfo', function() {
                 return ['42S02', -204, "Error"];
             });
 

@@ -22,19 +22,23 @@ class PostgreSql extends \chaos\database\Database
      *
      * @param  string  $feature Test for support for a specific feature, i.e. `"transactions"`
      *                          or `"arrays"`.
-     * @return boolean          Returns `true` if the particular feature (or if MySQL) support
-     *                          is enabled, otherwise `false`.
+     * @return mixed            Returns a boolean value indicating if a particular feature is supported or not.
+     *                          Returns an array of all supported features when called with no parameter.
      */
     public static function enabled($feature = null)
     {
-        if (!$feature) {
-            return extension_loaded('pdo_pgsql');
+        if (!extension_loaded('pdo_mysql')) {
+            throw new DatabaseException("The PDO PostgreSQL extension is not installed.");
         }
+
         $features = [
             'arrays' => true,
             'transactions' => true,
             'booleans' => true
         ];
+        if (!func_num_args()) {
+            return $features;
+        }
         return isset($features[$feature]) ? $features[$feature] : null;
     }
 
@@ -131,7 +135,8 @@ class PostgreSql extends \chaos\database\Database
      *
      * @return array Returns an array of sources.
      */
-    public function sources() {
+    public function sources()
+    {
         $select = $this->dialect()->statement('select');
         $select->fields('table_name')
             ->from(['information_schema' => ['tables']])
@@ -143,89 +148,66 @@ class PostgreSql extends \chaos\database\Database
     }
 
     /**
-     * Gets the column schema for a given PostgreSQL table.
+     * Extracts fields definitions of a table.
      *
-     * @param  mixed  $name   Specifies the table name for which the schema should be returned.
-     * @param  array  $fields Any schema data pre-defined by the model.
-     * @param  array  $meta
-     * @return object         Returns a shema definition.
+     * @param  string $name The table name.
+     * @return array        The fields definitions.
      */
-    public function describe($name,  $fields = [], $meta = []) {
-        $class = $this->_classes['schema'];
-
-        $schema = new $class([
-            'connection' => $this,
-            'source'     => $name,
-            'meta'       => $meta
+    public function fields($name)
+    {
+        $fields = [];
+        $select = $this->dialect()->statement('select');
+        $select->fields([
+            'column_name' => 'name',
+            'data_type'   => 'use',
+            'is_nullable' => 'null',
+            'column_default' => 'default',
+            'character_maximum_length' => 'length',
+            'numeric_precision' => 'numeric_length',
+            'numeric_scale' => 'precision',
+            'datetime_precision' => 'date_length'
+        ])
+        ->from(['information_schema' => ['columns']])
+        ->where([
+           'table_name'   => $name,
+           'table_schema' => $this->_config['schema']
         ]);
 
-        if (func_num_args() === 1) {
+        $columns = $this->query($select->toString());
 
-            $select = $this->dialect()->statement('select');
-            $select->fields([
-                'column_name' => 'name',
-                'data_type'   => 'use',
-                'is_nullable' => 'null',
-                'column_default' => 'default',
-                'character_maximum_length' => 'length',
-                'numeric_precision' => 'numeric_length',
-                'numeric_scale' => 'precision',
-                'datetime_precision' => 'date_length'
-            ])
-            ->from(['information_schema' => ['columns']])
-            ->where([
-               'table_name'   => $name,
-               'table_schema' => $this->_config['schema']
-            ]);
+        foreach ($columns as $column) {
+            $default = $column['default'];
+            $name = $column['name'];
+            $field = $this->_field($column);
 
-            $columns = $this->query($select->toString());
-
-            foreach ($columns as $row) {
-                $name = $row['name'];
-                $use = $row['use'];
-                $field = $this->_column($row['use']);
-                $default = $row['default'];
-
-                if ($row['length']) {
-                    $field['length'] = $row['length'];
-                } else if ($row['date_length']) {
-                    $field['length'] = $row['date_length'];
-                } else if ($use === 'numeric' && $row['numeric_length']) {
-                    $field['length'] = $row['numeric_length'];
-                }
-                if ($row['precision']) {
-                    $field['precision'] = $row['precision'];
-                }
-
-                switch ($field['type']) {
-                    case 'string':
-                        if (preg_match("/^'(.*)'::/", $default, $match)) {
-                            $default = $match[1];
-                        }
-                        break;
-                    case 'boolean':
-                        if ($default === 'true') {
-                            $default = true;
-                        }
-                        if ($default === 'false') {
-                            $default = false;
-                        }
-                        break;
-                    case 'integer':
-                        $default = is_numeric($default) ? $default : null;
-                        break;
-                    case 'datetime':
-                        $default = $default !== 'now()' ? $default : null;
-                        break;
-                }
-
-                $schema->set($name, $field + [
-                    'null'     => ($row['null'] === 'YES' ? true : false),
-                    'default'  => $default
-                ]);
+            switch ($field['type']) {
+                case 'string':
+                    if (preg_match("/^'(.*)'::/", $default, $match)) {
+                        $default = $match[1];
+                    }
+                    break;
+                case 'boolean':
+                    if ($default === 'true') {
+                        $default = true;
+                    }
+                    if ($default === 'false') {
+                        $default = false;
+                    }
+                    break;
+                case 'integer':
+                    $default = is_numeric($default) ? $default : null;
+                    break;
+                case 'datetime':
+                    $default = $default !== 'now()' ? $default : null;
+                    break;
             }
+
+            $fields[$name] = $field + [
+                'null'     => ($column['null'] === 'YES' ? true : false),
+                'default'  => $default
+            ];
         }
-        return $schema;
+        return $fields;
     }
 
     /**
@@ -234,11 +216,24 @@ class PostgreSql extends \chaos\database\Database
      * @param  string $use Real database-layer column type (i.e. `"varchar(255)"`)
      * @return array       Column type (i.e. "string") plus 'length' when appropriate.
      */
-    protected function _column($use)
+    protected function _field($column)
     {
-        $column = ['use' => $use];
-        $column['type'] = $this->dialect()->mapped($column);
-        return $column;
+        $use = $column['use'];
+        $field = ['use' => $use];
+
+        if ($column['length']) {
+            $field['length'] = $column['length'];
+        } else if ($column['date_length']) {
+            $field['length'] = $column['date_length'];
+        } else if ($use === 'numeric' && $column['numeric_length']) {
+            $field['length'] = $column['numeric_length'];
+        }
+        if ($column['precision']) {
+            $field['precision'] = $column['precision'];
+        }
+
+        $field['type'] = $this->dialect()->mapped($field);
+        return $field;
     }
 
     /**
@@ -251,12 +246,12 @@ class PostgreSql extends \chaos\database\Database
     public function searchPath($searchPath = null)
     {
         if (!func_num_args()) {
-            $query = $this->driver()->query('SHOW search_path');
+            $query = $this->client()->query('SHOW search_path');
             $searchPath = $query->fetch();
             return explode(",", $searchPath['search_path']);
         }
         try{
-            $this->driver()->exec("SET search_path TO ${searchPath}");
+            $this->client()->exec("SET search_path TO ${searchPath}");
             return true;
         } catch (PDOException $e) {
             return false;
@@ -270,7 +265,7 @@ class PostgreSql extends \chaos\database\Database
      */
     public function lastInsertId($sequence = null)
     {
-        $id = $this->driver()->lastInsertId($sequence);
+        $id = $this->client()->lastInsertId($sequence);
         return ($id && $id !== '0') ? $id : null;
     }
 
@@ -284,11 +279,11 @@ class PostgreSql extends \chaos\database\Database
     public function timezone($timezone = null)
     {
         if (empty($timezone)) {
-            $query = $this->driver()->query('SHOW TIME ZONE');
+            $query = $this->client()->query('SHOW TIME ZONE');
             return $query->fetchColumn();
         }
         try {
-            $this->driver()->exec("SET TIME ZONE '{$timezone}'");
+            $this->client()->exec("SET TIME ZONE '{$timezone}'");
             return true;
         } catch (PDOException $e) {
             return false;
@@ -305,13 +300,13 @@ class PostgreSql extends \chaos\database\Database
     public function encoding($encoding = null)
     {
         if (empty($encoding)) {
-            $query = $this->driver()->query("SHOW client_encoding");
+            $query = $this->client()->query("SHOW client_encoding");
             $encoding = $query->fetchColumn();
             return strtolower($encoding);
         }
 
         try {
-            $this->driver()->exec("SET NAMES '{$encoding}'");
+            $this->client()->exec("SET NAMES '{$encoding}'");
             return true;
         } catch (PDOException $e) {
             return false;

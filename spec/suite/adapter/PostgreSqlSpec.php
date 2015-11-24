@@ -25,17 +25,21 @@ describe("PostgreSql", function() {
 
         it("returns `true` for enabled features, false otherwise.", function() {
 
-            expect(PostgreSql::enabled())->toBe(true);
+            expect(PostgreSql::enabled())->toEqual([
+                'arrays'       => true,
+                'transactions' => true,
+                'booleans'     => true
+            ]);
             expect(PostgreSql::enabled('arrays'))->toBe(true);
             expect(PostgreSql::enabled('transactions'))->toBe(true);
             expect(PostgreSql::enabled('booleans'))->toBe(true);
 
         });
 
-        it("returns `false` if the extension is not loaded.", function() {
+        it("throws an exception if the extension is not loaded.", function() {
 
             Monkey::patch('extension_loaded', function() { return false; });
-            expect(PostgreSql::enabled())->toBe(false);
+            expect(function() { PostgreSql::enabled(); })->toThrow(new DatabaseException("The PDO PostgreSQL extension is not installed."));
 
         });
 
@@ -110,7 +114,7 @@ describe("PostgreSql", function() {
 
             $gallery = $this->adapter->describe('gallery');
 
-            expect($gallery->field('id'))->toBe([
+            expect($gallery->field('id'))->toEqual([
                 'use'     => 'integer',
                 'type'    => 'integer',
                 'null'    => false,
@@ -118,7 +122,7 @@ describe("PostgreSql", function() {
                 'array'   => false
             ]);
 
-            expect($gallery->field('name'))->toBe([
+            expect($gallery->field('name'))->toEqual([
                 'use'     => 'character varying',
                 'type'    => 'string',
                 'length'  => 128,
@@ -127,7 +131,7 @@ describe("PostgreSql", function() {
                 'array'   => false
             ]);
 
-            expect($gallery->field('active'))->toBe([
+            expect($gallery->field('active'))->toEqual([
                 'use'     => 'boolean',
                 'type'    => 'boolean',
                 'null'    => true,
@@ -135,7 +139,7 @@ describe("PostgreSql", function() {
                 'array'   => false
             ]);
 
-            expect($gallery->field('inactive'))->toBe([
+            expect($gallery->field('inactive'))->toEqual([
                 'use'     => 'boolean',
                 'type'    => 'boolean',
                 'null'    => true,
@@ -143,7 +147,7 @@ describe("PostgreSql", function() {
                 'array'   => false
             ]);
 
-            expect($gallery->field('money'))->toBe([
+            expect($gallery->field('money'))->toEqual([
                 'use'       => 'numeric',
                 'type'      => 'decimal',
                 'length'    => 10,
@@ -153,7 +157,7 @@ describe("PostgreSql", function() {
                 'array'     => false
             ]);
 
-            expect($gallery->field('created'))->toBe([
+            expect($gallery->field('created'))->toEqual([
                 'use'     => 'timestamp without time zone',
                 'type'    => 'datetime',
                 'length'  => 2,

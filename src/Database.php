@@ -32,7 +32,7 @@ abstract class Database
      *
      * @var mixed
      */
-    protected $_pdo = null;
+    protected $_client = null;
 
     /**
      * Specific value denoting whether or not table aliases should be used in DELETE and UPDATE queries.
@@ -87,7 +87,7 @@ abstract class Database
                 'schema'  => 'chaos\database\Schema',
                 'dialect' => 'sql\Dialect'
             ],
-            'pdo'        => null,
+            'client'     => null,
             'connect'    => true,
             'meta'       => ['key' => 'id', 'locked' => true],
             'persistent' => true,
@@ -105,8 +105,8 @@ abstract class Database
         $this->_config = $config;
 
         $this->_classes = $this->_config['classes'] + $this->_classes;
-        $this->_pdo = $this->_config['pdo'];
-        unset($this->_config['pdo']);
+        $this->_client = $this->_config['client'];
+        unset($this->_config['client']);
 
         $this->_dialect = $config['dialect'];
         unset($this->_config['dialect']);
@@ -167,7 +167,7 @@ abstract class Database
      */
     public function __call($name, $params = [])
     {
-        return call_user_func_array([$this->_pdo, $name], $params);
+        return call_user_func_array([$this->_client, $name], $params);
     }
 
     /**
@@ -187,8 +187,8 @@ abstract class Database
      */
     public function connect()
     {
-        if ($this->_pdo) {
-            return $this->_pdo;
+        if ($this->_client) {
+            return $this->_client;
         }
         $config = $this->_config;
 
@@ -203,7 +203,7 @@ abstract class Database
         ];
 
         try {
-            $this->_pdo = new PDO($dsn, $config['username'], $config['password'], $options);
+            $this->_client = new PDO($dsn, $config['username'], $config['password'], $options);
         } catch (PDOException $e) {
             $this->_exception($e);
         }
@@ -212,7 +212,7 @@ abstract class Database
             $this->encoding($config['encoding']);
         }
 
-        return $this->_pdo;
+        return $this->_client;
     }
 
     /**
@@ -229,8 +229,8 @@ abstract class Database
      *
      * @return mixed
      */
-    public function driver() {
-        return $this->_pdo;
+    public function client() {
+        return $this->_client;
     }
 
     /**
@@ -241,7 +241,30 @@ abstract class Database
      *                 otherwise been dropped by the remote resource during the course of the request.
      */
     public function connected() {
-        return !!$this->_pdo;
+        return !!$this->_client;
+    }
+
+    /**
+     * Gets the column schema for a given table.
+     *
+     * @param  mixed  $name   Specifies the table name for which the schema should be returned.
+     * @param  array  $fields Any schema data pre-defined by the model.
+     * @param  array  $meta
+     * @return object         Returns a shema definition.
+     */
+    public function describe($name,  $fields = [], $meta = [])
+    {
+        if (func_num_args() === 1) {
+            $fields = $this->fields($name);
+        }
+
+        $schema = $this->_classes['schema'];
+        return new $schema([
+            'connection' => $this,
+            'source'     => $name,
+            'fields'     => $fields,
+            'meta'       => $meta
+        ]);
     }
 
     /**
@@ -418,9 +441,10 @@ abstract class Database
     {
         $defaults = ['exception' => true];
         $options += $defaults;
-        $statement = $this->driver()->prepare($sql);
+        $statement = null;
 
         try {
+            $statement = $this->client()->prepare($sql);
             $error = !$statement->execute($data);
         } catch (PDOException $e) {
             $error = true;
@@ -429,7 +453,11 @@ abstract class Database
             }
         }
 
-        $err = $statement->errorInfo();
+        if ($statement) {
+            $err = $statement->errorInfo();
+        } else {
+            $err = $this->client()->errorInfo();
+        }
         $errmsg = $err[0] === '0000' ? '' : $err[0] . ($err[1] ? ' (' . $err[1] . ')' : '') . ':' . $err[2];
 
         $cursor = $this->_classes['cursor'];
@@ -449,7 +477,7 @@ abstract class Database
      */
     public function lastInsertId()
     {
-        return $this->driver()->lastInsertId();
+        return $this->client()->lastInsertId();
     }
 
     /**
@@ -459,7 +487,7 @@ abstract class Database
      */
     public function errmsg()
     {
-        $err = $this->driver()->errorInfo();
+        $err = $this->client()->errorInfo();
         if (!isset($err[0]) || !(int) $err[0]) {
             return '';
         }
@@ -473,7 +501,7 @@ abstract class Database
      */
     public function disconnect()
     {
-        $this->_pdo = null;
+        $this->_client = null;
         return true;
     }
 
