@@ -15,7 +15,11 @@
     },
     "autoload": {
         "psr-4": {
-            "chaos\\database\\": "src/",
+            "chaos\\database\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
             "chaos\\database\\spec\\": "spec/"
         }
     },
