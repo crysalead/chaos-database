@@ -28,11 +28,13 @@ describe("PostgreSql", function() {
             expect(PostgreSql::enabled())->toEqual([
                 'arrays'       => true,
                 'transactions' => true,
-                'booleans'     => true
+                'booleans'     => true,
+                'default'      => true
             ]);
             expect(PostgreSql::enabled('arrays'))->toBe(true);
             expect(PostgreSql::enabled('transactions'))->toBe(true);
             expect(PostgreSql::enabled('booleans'))->toBe(true);
+            expect(PostgreSql::enabled('default'))->toBe(true);
 
         });
 
@@ -205,6 +207,21 @@ describe("PostgreSql", function() {
             expect($schema->lastInsertId())->toBe("1");
 
             $schema->drop();
+        });
+
+        it("gets the encoding last insert ID even with an empty record", function() {
+
+            $schema = new Schema(['connection' => $this->adapter]);
+            $schema->source('gallery');
+            $schema->set('id',   ['type' => 'serial']);
+            $schema->set('name', ['type' => 'string']);
+            $schema->create();
+
+            $schema->insert([]);
+            expect($schema->lastInsertId())->toBe("1");
+
+            $schema->drop();
+
         });
 
     });

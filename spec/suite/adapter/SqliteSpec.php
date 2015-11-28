@@ -27,11 +27,13 @@ describe("Sqlite", function() {
             expect(Sqlite::enabled())->toEqual([
                 'arrays'       => false,
                 'transactions' => false,
-                'booleans'     => true
+                'booleans'     => true,
+                'default'      => false
             ]);
             expect(Sqlite::enabled('arrays'))->toBe(false);
             expect(Sqlite::enabled('transactions'))->toBe(false);
             expect(Sqlite::enabled('booleans'))->toBe(true);
+            expect(Sqlite::enabled('default'))->toBe(false);
 
         });
 
@@ -183,6 +185,21 @@ describe("Sqlite", function() {
             expect($schema->lastInsertId())->toBe("1");
 
             $schema->drop();
+        });
+
+        it("gets the encoding last insert ID even with an empty record", function() {
+
+            $schema = new Schema(['connection' => $this->adapter]);
+            $schema->source('gallery');
+            $schema->set('id',   ['type' => 'serial']);
+            $schema->set('name', ['type' => 'string']);
+            $schema->create();
+
+            $schema->insert([]);
+            expect($schema->lastInsertId())->toBe("1");
+
+            $schema->drop();
+
         });
 
     });

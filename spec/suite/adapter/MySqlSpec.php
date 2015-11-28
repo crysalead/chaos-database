@@ -27,11 +27,13 @@ describe("MySql", function() {
             expect(MySql::enabled())->toEqual([
                 'arrays'       => false,
                 'transactions' => true,
-                'booleans'     => true
+                'booleans'     => true,
+                'default'      => false
             ]);
             expect(MySql::enabled('arrays'))->toBe(false);
             expect(MySql::enabled('transactions'))->toBe(true);
             expect(MySql::enabled('booleans'))->toBe(true);
+            expect(MySql::enabled('default'))->toBe(false);
 
         });
 
@@ -186,6 +188,21 @@ describe("MySql", function() {
             expect($schema->lastInsertId())->toBe("1");
 
             $schema->drop();
+        });
+
+        it("gets the encoding last insert ID even with an empty record", function() {
+
+            $schema = new Schema(['connection' => $this->adapter]);
+            $schema->source('gallery');
+            $schema->set('id',   ['type' => 'serial']);
+            $schema->set('name', ['type' => 'string']);
+            $schema->create();
+
+            $schema->insert([]);
+            expect($schema->lastInsertId())->toBe("1");
+
+            $schema->drop();
+
         });
 
     });

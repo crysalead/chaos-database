@@ -28,7 +28,8 @@ class MySql extends \chaos\database\Database
         $features = [
             'arrays' => false,
             'transactions' => true,
-            'booleans' => true
+            'booleans' => true,
+            'default' => false
         ];
         if (!func_num_args()) {
             return $features;

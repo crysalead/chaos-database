@@ -34,7 +34,8 @@ class PostgreSql extends \chaos\database\Database
         $features = [
             'arrays' => true,
             'transactions' => true,
-            'booleans' => true
+            'booleans' => true,
+            'default' => true
         ];
         if (!func_num_args()) {
             return $features;

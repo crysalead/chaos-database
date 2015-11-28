@@ -28,7 +28,8 @@ class Sqlite extends \chaos\database\Database
         $features = [
             'arrays' => false,
             'transactions' => false,
-            'booleans' => true
+            'booleans' => true,
+            'default' => false
         ];
         if (!func_num_args()) {
             return $features;

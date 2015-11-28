@@ -156,6 +156,7 @@ abstract class Database
         $this->formatter('datasource', 'boolean',   $handlers['datasource']['boolean']);
         $this->formatter('datasource', 'null',      $handlers['datasource']['null']);
         $this->formatter('datasource', 'string',    $handlers['datasource']['quote']);
+        $this->formatter('datasource', 'object',    $handlers['datasource']['object']);
         $this->formatter('datasource', '_default_', $handlers['datasource']['quote']);
     }
 
@@ -374,6 +375,12 @@ abstract class Database
                 },
                 'null'    => function($value, $options = []) {
                     return 'NULL';
+                },
+                'object'  => function($value, $options = []) {
+                    if (isset($value->scalar)) {
+                        return $value->scalar;
+                    }
+                    return (string) $value;
                 }
             ]
         ];

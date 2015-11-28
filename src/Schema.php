@@ -77,6 +77,11 @@ class Schema extends \chaos\Schema
      */
     public function insert($data, $options = [])
     {
+        $primaryKey = $this->primaryKey();
+        if (!array_key_exists($primaryKey, $data)) {
+            $connection = $this->connection();
+            $data[$primaryKey] = $connection::enabled('default') ? (object) 'default' : null;
+        }
         $insert = $this->connection()->dialect()->statement('insert');
         $insert->into($this->source())
                ->values($data);
