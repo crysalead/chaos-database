@@ -226,6 +226,20 @@ describe("PostgreSql", function() {
 
     });
 
+    describe("->query()", function() {
+
+        it("throws an exception when an error occured", function() {
+
+            $closure = function() {
+                $this->adapter->query('SELECT');
+            };
+
+            expect($closure)->toThrow('~error~');
+
+        });
+
+    });
+
     describe("->encoding()", function() {
 
         it("gets/sets the encoding", function() {

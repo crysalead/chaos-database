@@ -284,7 +284,7 @@ abstract class Database
             case $code === 'HY000' || substr($code, 0, 2) === '08':
                 $msg = "Unable to connect to host `{$config['host']}` [{$code}].";
             break;
-            case in_array($code, array('28000')):
+            case in_array($code, ['28000'], true):
                 $msg = "Host connected, but could not access database `{$config['database']}`.";
             break;
         }
@@ -452,29 +452,13 @@ abstract class Database
 
         try {
             $statement = $this->client()->prepare($sql);
-            $error = !$statement->execute($data);
-        } catch (PDOException $e) {
-            $error = true;
-            if ($options['exception']) {
-                $this->_exception($e, $sql);
+            if ($statement->execute($data)) {
+                $cursor = $this->_classes['cursor'];
+                return new $cursor($options + ['resource' => $statement]);
             }
+        } catch (PDOException $e) {
+            $this->_exception($e, $sql);
         }
-
-        if ($statement) {
-            $err = $statement->errorInfo();
-        } else {
-            $err = $this->client()->errorInfo();
-        }
-        $errmsg = $err[0] === '0000' ? '' : $err[0] . ($err[1] ? ' (' . $err[1] . ')' : '') . ':' . $err[2];
-
-        $cursor = $this->_classes['cursor'];
-
-        return new $cursor($options + [
-            'resource' => $statement,
-            'error'    => $error,
-            'errno'    => $err[0],
-            'errmsg'   => $errmsg
-        ]);
     }
 
     /**

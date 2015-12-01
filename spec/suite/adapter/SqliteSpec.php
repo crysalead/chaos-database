@@ -204,12 +204,15 @@ describe("Sqlite", function() {
 
     });
 
-    describe("->query", function() {
+    describe("->query()", function() {
 
-        it("returns an invalid cursor when an error occurs in silent mode", function() {
+        it("throws an exception when an error occured", function() {
 
-            $cursor = $this->adapter->query('SELECT', [], ['exception' => false]);
-            expect($cursor->error())->toBe(true);
+            $closure = function() {
+                $this->adapter->query('SELECT');
+            };
+
+            expect($closure)->toThrow(/*'~error~'*/);
 
         });
 
