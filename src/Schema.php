@@ -1,9 +1,9 @@
 <?php
-namespace chaos\database;
+namespace Chaos\Database;
 
-use chaos\database\DatabaseException;
+use Chaos\Database\DatabaseException;
 
-class Schema extends \chaos\Schema
+class Schema extends \Chaos\Schema
 {
     /**
      * Class dependencies.
@@ -11,12 +11,12 @@ class Schema extends \chaos\Schema
      * @var array
      */
     protected $_classes = [
-        'relationship'   => 'chaos\Relationship',
-        'belongsTo'      => 'chaos\relationship\BelongsTo',
-        'hasOne'         => 'chaos\relationship\HasOne',
-        'hasMany'        => 'chaos\relationship\HasMany',
-        'hasManyThrough' => 'chaos\relationship\HasManyThrough',
-        'query'          => 'chaos\database\Query'
+        'relationship'   => 'Chaos\Relationship',
+        'belongsTo'      => 'Chaos\Relationship\BelongsTo',
+        'hasOne'         => 'Chaos\Relationship\HasOne',
+        'hasMany'        => 'Chaos\Relationship\HasMany',
+        'hasManyThrough' => 'Chaos\Relationship\HasManyThrough',
+        'query'          => 'Chaos\Database\Query'
     ];
 
     /**

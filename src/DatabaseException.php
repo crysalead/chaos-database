@@ -1,5 +1,5 @@
 <?php
-namespace chaos\database;
+namespace Chaos\Database;
 
 /**
  * The `DatabaseException` is thrown when a operation fails at the database level.

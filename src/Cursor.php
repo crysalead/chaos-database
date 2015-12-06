@@ -1,10 +1,10 @@
 <?php
-namespace chaos\database;
+namespace Chaos\Database;
 
 use PDO;
 use PDOStatement;
 use PDOException;
-use chaos\database\DatabaseException;
+use Chaos\Database\DatabaseException;
 
 /**
  * This class is a wrapper around the `PDOStatement` returned and can be used to iterate over it.

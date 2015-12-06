@@ -1,12 +1,12 @@
 <?php
-namespace chaos\database;
+namespace Chaos\Database;
 
 use PDO;
 use PDOException;
 use PDOStatement;
 use DateTime;
-use set\Set;
-use chaos\database\DatabaseException;
+use Lead\Set\Set;
+use Chaos\Database\DatabaseException;
 
 /**
  * PDO driver adapter base class
@@ -83,9 +83,9 @@ abstract class Database
     {
         $defaults = [
             'classes' => [
-                'cursor'  => 'chaos\database\Cursor',
-                'schema'  => 'chaos\database\Schema',
-                'dialect' => 'sql\Dialect'
+                'cursor'  => 'Chaos\Database\Cursor',
+                'schema'  => 'Chaos\Database\Schema',
+                'dialect' => 'Lead\Sql\Dialect'
             ],
             'client'     => null,
             'connect'    => true,

@@ -1,10 +1,10 @@
 <?php
-namespace chaos\database;
+namespace Chaos\Database;
 
 use PDO;
 use IteratorAggregate;
-use set\Set;
-use chaos\database\DatabaseException;
+use Lead\Set\Set;
+use Chaos\Database\DatabaseException;
 
 /**
  * The Query wrapper.
@@ -17,7 +17,7 @@ class Query implements IteratorAggregate
      * @var array
      */
     protected $_classes = [
-        'collector' => 'chaos\Collector'
+        'collector' => 'Chaos\Collector'
     ];
 
     /**

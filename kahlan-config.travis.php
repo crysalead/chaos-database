@@ -1,8 +1,8 @@
 <?php
-use box\Box;
-use chaos\database\adapter\MySql;
-use chaos\database\adapter\PostgreSql;
-use chaos\database\adapter\Sqlite;
+use Lead\Box\Box;
+use Chaos\Database\Adapter\MySql;
+use Chaos\Database\Adapter\PostgreSql;
+use Chaos\Database\Adapter\Sqlite;
 
 date_default_timezone_set('UTC');
 
