@@ -105,19 +105,6 @@ describe("Database", function() {
             });
         });
 
-        it("throws an exception when PDO can't connect to the host", function() {
-
-            $closure = function() {
-                $e = Stub::create();
-                Stub::on($e)->method('getCode', function() {
-                    return 'HY000';
-                });
-                $this->database->exception($e);
-            };
-            expect($closure)->toThrow(new DatabaseException("Unable to connect to host `localhost` [HY000]."));
-
-        });
-
         it("throws an exception when PDO can't connect to the database", function() {
 
             $closure = function() {
@@ -125,9 +112,12 @@ describe("Database", function() {
                 Stub::on($e)->method('getCode', function() {
                     return '28000';
                 });
+                Stub::on($e)->method('getMessage', function() {
+                    return 'Host connected, but could not access database.';
+                });
                 $this->database->exception($e);
             };
-            expect($closure)->toThrow(new DatabaseException("Host connected, but could not access database ``.", 28000));
+            expect($closure)->toThrow(new DatabaseException("Host connected, but could not access database.", 28000));
 
         });
 

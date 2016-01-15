@@ -280,14 +280,6 @@ abstract class Database
         $config = $this->_config;
         $code = $e->getCode();
         $msg = $e->getMessage();
-        switch (true) {
-            case $code === 'HY000' || substr($code, 0, 2) === '08':
-                $msg = "Unable to connect to host `{$config['host']}` [{$code}].";
-            break;
-            case in_array($code, ['28000'], true):
-                $msg = "Host connected, but could not access database `{$config['database']}`.";
-            break;
-        }
         $exception = new DatabaseException("{$msg}" . ($sql ? " in {$sql}" : ''), (int) $code);
         throw $exception;
     }
