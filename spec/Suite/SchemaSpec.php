@@ -2,7 +2,6 @@
 namespace Chaos\Database\Spec\Suite;
 
 use Lead\Set\Set;
-use Chaos\ChaosException;
 use Chaos\Database\DatabaseException;
 use Chaos\Model;
 use Chaos\Database\Query;
@@ -498,34 +497,6 @@ foreach ($connections as $db => $connection) {
 
             });
 
-            it("validates by default", function() {
-
-                $model = $this->image;
-                $image = $model::create([]);
-                $model::validator()->rule('name', 'not:empty');
-
-                expect($image->save())->toBe(false);
-                expect($image->exists())->toBe(false);
-
-            });
-
-            it("validates direct relationships by default", function() {
-
-                $gallery = $this->gallery;
-                $gallery::validator()->rule('name', 'not:empty');
-
-
-                $model = $this->image;
-                $image = $model::create([
-                    'name' => 'amiga_1200.jpg',
-                    'title' => 'Amiga 1200',
-                    'gallery' => []
-                ]);
-                expect($image->save())->toBe(false);
-                expect($image->exists())->toBe(false);
-
-            });
-
             it("throws an exception when trying to update an entity with no ID data", function() {
 
                 $closure = function() {
@@ -535,7 +506,7 @@ foreach ($connections as $db => $connection) {
                     $gallery->save();
                 };
 
-                expect($closure)->toThrow(new ChaosException("Can't update an entity missing ID data."));
+                expect($closure)->toThrow(new DatabaseException("Can't update an entity missing ID data."));
 
             });
 
@@ -548,7 +519,7 @@ foreach ($connections as $db => $connection) {
                     $gallery->save();
                 };
 
-                expect($closure)->toThrow(new ChaosException("Can't update an entity missing ID data."));
+                expect($closure)->toThrow(new DatabaseException("Can't update an entity missing ID data."));
 
             });
 

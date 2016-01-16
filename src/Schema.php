@@ -67,6 +67,89 @@ class Schema extends \Chaos\Schema
     }
 
     /**
+     * Inserts and/or updates an entity and its direct relationship data in the datasource.
+     *
+     * @param object   $entity  The entity instance to save.
+     * @param array    $options Options:
+     *                          - `'whitelist'` _array_  : An array of fields that are allowed to be saved to this record.
+     *                          - `'locked'`    _boolean_: Lock data to the schema fields.
+     *                          - `'embed'`     _array_  : List of relations to save.
+     * @return boolean          Returns `true` on a successful save operation, `false` otherwise.
+     */
+    public function save($entity, $options = [])
+    {
+        $defaults = [
+            'whitelist' => null,
+            'locked' => $this->locked(),
+            'embed' => true
+        ];
+        $options += $defaults;
+
+        $options['validate'] = false;
+        $options['embed'] = $this->treeify($options['embed']);
+
+        if (!$this->_save($entity, 'belongsTo', $options)) {
+            return false;
+        }
+
+        $hasRelations = ['hasMany', 'hasOne'];
+
+        if (!$entity->modified()) {
+            return $this->_save($entity, $hasRelations, $options);
+        }
+
+        if (($whitelist = $options['whitelist']) || $options['locked']) {
+            $whitelist = $whitelist ?: array_keys($this->fields());
+        }
+
+        $exclude = array_diff($this->relations(false), array_keys($this->fields()));
+        $values = array_diff_key($entity->get(), array_fill_keys($exclude, true));
+
+        if ($entity->exists() === false) {
+            $success = $this->insert($values);
+        } else {
+            $id = $entity->primaryKey();
+            if ($id === null) {
+                throw new DatabaseException("Can't update an entity missing ID data.");
+            }
+            $success = $this->update($values, [$this->primaryKey() => $id]);
+        }
+
+        if ($entity->exists() === false) {
+            $id = $entity->primaryKey() === null ? $this->lastInsertId() : null;
+            $entity->sync($id, [], ['exists' => true]);
+        }
+
+        return $success && $this->_save($entity, $hasRelations, $options);
+    }
+
+    /**
+     * Save relations helper.
+     *
+     * @param  object  $entity  The entity instance.
+     * @param  array   $types   Type of relations to save.
+     * @param  array   $options Options array.
+     * @return boolean          Returns `true` on a successful save operation, `false` on failure.
+     */
+    protected function _save($entity, $types, $options = [])
+    {
+        $defaults = ['embed' => []];
+        $options += $defaults;
+        $types = (array) $types;
+
+        $success = true;
+        foreach ($types as $type) {
+            foreach ($options['embed'] as $relName => $value) {
+                if (!($rel = $this->relation($relName)) || $rel->type() !== $type) {
+                    continue;
+                }
+                $success = $success && $rel->save($entity, ['embed' => $value] + $options);
+            }
+        }
+        return $success;
+    }
+
+    /**
      * Inserts a records  with the given data.
      *
      * @param  mixed   $data       Typically an array of key/value pairs that specify the new data with which
