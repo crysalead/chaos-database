@@ -84,6 +84,13 @@ class Query implements IteratorAggregate
     protected $_has = [];
 
     /**
+     * Pagination
+     *
+     * @var array
+     */
+    protected $_page = [];
+
+    /**
      * Creates a new record object with default values.
      *
      * @param array $config Possible options are:
@@ -197,6 +204,7 @@ class Query implements IteratorAggregate
         $collector = $options['collector'] = $options['collector'] ?: new $class();
 
         $this->_applyHas();
+        $this->_applyLimit();
 
         if ($noFields = !$this->statement()->data('fields')) {
             $this->statement()->fields([$this->alias() => ['*']]);
@@ -369,6 +377,42 @@ class Query implements IteratorAggregate
     }
 
     /**
+     * Sets page number.
+     *
+     * @param  integer $page The page number
+     * @return self
+     */
+    public function page($page)
+    {
+        $this->_page['page'] = $page;
+        return $this;
+    }
+
+    /**
+     * Sets offset value.
+     *
+     * @param  integer $offset The offset value.
+     * @return self
+     */
+    public function offset($offset)
+    {
+        $this->_page['offset'] = $offset;
+        return $this;
+    }
+
+    /**
+     * Sets limit value.
+     *
+     * @param  integer $limit The number of results to limit or `0` for no limit at all.
+     * @return self
+     */
+    public function limit($limit)
+    {
+        $this->_page['limit'] = (integer) $limit;
+        return $this;
+    }
+
+    /**
      * Applies a query handler
      *
      * @param  Closure $closure A closure.
@@ -446,6 +490,9 @@ class Query implements IteratorAggregate
         return $alias;
     }
 
+    /**
+     * Applies the has conditions.
+     */
     protected function _applyHas()
     {
         $tree = Set::expand(array_fill_keys(array_keys($this->has()), false));
@@ -455,6 +502,31 @@ class Query implements IteratorAggregate
         }
     }
 
+    /**
+     * Applies the limit range when applicable.
+     */
+    protected function _applyLimit()
+    {
+        if (empty($this->_page['limit'])) {
+            return;
+        }
+        if (!empty($this->_page['offset'])) {
+            $offset = $this->_page['offset'];
+        } else {
+            $page = !empty($this->_page['page']) ? $this->_page['page'] : 1;
+            $offset = ($page - 1) * $this->_page['limit'];
+        }
+        $this->statement()->limit($this->_page['limit'], $offset);
+    }
+
+    /**
+     * Applies joins.
+     *
+     * @param object $model     The model to perform joins on.
+     * @param array  $tree      The tree of relations to join.
+     * @param array  $basePath  The base relation path.
+     * @param string $aliasFrom The alias name of the from model.
+     */
     protected function _applyJoins($model, $tree, $basePath, $aliasFrom)
     {
         foreach ($tree as $name => $childs) {

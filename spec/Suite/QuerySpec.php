@@ -368,6 +368,64 @@ foreach ($connections as $db => $connection) {
 
         });
 
+        describe("->page()", function() {
+
+            it("returns records at a specific page", function() {
+
+                $this->fixtures->populate('tag');
+
+                $query = new Query([
+                    'model'      => $this->tag,
+                    'connection' => $this->connection
+                ]);
+
+                $result = $query->order(['id'])->page(1)->limit(3)->all()->data();
+                expect($result)->toEqual([
+                    ['id' => '1', 'name' => 'High Tech'],
+                    ['id' => '2', 'name' => 'Sport'],
+                    ['id' => '3', 'name' => 'Computer']
+                ]);
+
+                $result = $query->order(['id'])->page(2)->limit(3)->all()->data();
+                expect($result)->toEqual([
+                    ['id' => '4', 'name' => 'Art'],
+                    ['id' => '5', 'name' => 'Science'],
+                    ['id' => '6', 'name' => 'City']
+                ]);
+
+            });
+
+        });
+
+        describe("->offset()", function() {
+
+            it("returns records at a specific offset", function() {
+
+                $this->fixtures->populate('tag');
+
+                $query = new Query([
+                    'model'      => $this->tag,
+                    'connection' => $this->connection
+                ]);
+
+                $result = $query->order(['id'])->offset(0)->limit(3)->all()->data();
+                expect($result)->toEqual([
+                    ['id' => '1', 'name' => 'High Tech'],
+                    ['id' => '2', 'name' => 'Sport'],
+                    ['id' => '3', 'name' => 'Computer']
+                ]);
+
+                $result = $query->order(['id'])->offset(3)->limit(3)->all()->data();
+                expect($result)->toEqual([
+                    ['id' => '4', 'name' => 'Art'],
+                    ['id' => '5', 'name' => 'Science'],
+                    ['id' => '6', 'name' => 'City']
+                ]);
+
+            });
+
+        });
+
         describe("->embed()", function() {
 
             it("gets/sets with relationship", function() {
