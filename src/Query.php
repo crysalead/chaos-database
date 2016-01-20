@@ -223,11 +223,11 @@ class Query implements IteratorAggregate
             case 'entity':
                 $schema = $model::schema();
                 $source = $schema->source();
-                $primaryKey = $schema->primaryKey();
+                $key = $schema->key();
                 $collection = $model::create($collection, ['collector' => $collector, 'type' => 'set']);
-                foreach ($cursor as $key => $record) {
-                    if (!empty($record[$primaryKey]) && $collector->exists($source, $record[$primaryKey])) {
-                        $collection[] = $collector->get($source, $record[$primaryKey]);
+                foreach ($cursor as $record) {
+                    if (!empty($record[$key]) && $collector->exists($source, $record[$key])) {
+                        $collection[] = $collector->get($source, $record[$key]);
                     } else {
                         $collection[] = $model::create($record, [
                             'collector' => $collector,
@@ -239,7 +239,7 @@ class Query implements IteratorAggregate
                 break;
             case 'array':
             case 'object':
-                foreach ($cursor as $key => $record) {
+                foreach ($cursor as $record) {
                     $collection[] = $record;
                 }
                 break;

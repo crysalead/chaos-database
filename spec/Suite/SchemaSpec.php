@@ -298,11 +298,11 @@ foreach ($connections as $db => $connection) {
                 $image = $model::create($data);
                 expect($image->save())->toBe(true);
                 expect($image->exists())->toBe(true);
-                expect($image->primaryKey())->not->toBe(null);
+                expect($image->id())->not->toBe(null);
 
-                $reloaded = $model::id($image->primaryKey());
+                $reloaded = $model::load($image->id());
                 expect($reloaded->data())->toEqual([
-                    'id'         => $image->primaryKey(),
+                    'id'         => $image->id(),
                     'gallery_id' => null,
                     'name'       => 'amiga_1200.jpg',
                     'title'      => 'Amiga 1200'
@@ -311,11 +311,11 @@ foreach ($connections as $db => $connection) {
                 $reloaded->title = 'Amiga 1260';
                 expect($reloaded->save())->toBe(true);
                 expect($reloaded->exists())->toBe(true);
-                expect($reloaded->primaryKey())->toBe($image->primaryKey());
+                expect($reloaded->id())->toBe($image->id());
 
-                $persisted = $model::id($reloaded->primaryKey());
+                $persisted = $model::load($reloaded->id());
                 expect($persisted->data())->toEqual([
-                    'id'         => $reloaded->primaryKey(),
+                    'id'         => $reloaded->id(),
                     'gallery_id' => null,
                     'name'       => 'amiga_1200.jpg',
                     'title'      => 'Amiga 1260'
@@ -337,12 +337,12 @@ foreach ($connections as $db => $connection) {
                 $gallery = $model::create($data);
                 expect($gallery->save())->toBe(true);
 
-                expect($gallery->primaryKey())->not->toBe(null);
+                expect($gallery->id())->not->toBe(null);
                 foreach ($gallery->images as $image) {
-                    expect($image->gallery_id)->toBe($gallery->primaryKey());
+                    expect($image->gallery_id)->toBe($gallery->id());
                 }
 
-                $result = $model::id($gallery->primaryKey(),  ['embed' => ['images']]);
+                $result = $model::load($gallery->id(),  ['embed' => ['images']]);
                 expect($gallery->data())->toEqual($result->data());
 
             });
@@ -361,10 +361,10 @@ foreach ($connections as $db => $connection) {
                 $image = $model::create($data);
                 expect($image->save())->toBe(true);
 
-                expect($image->primaryKey())->not->toBe(null);
-                expect($image->gallery_id)->toBe($image->gallery->primaryKey());
+                expect($image->id())->not->toBe(null);
+                expect($image->gallery_id)->toBe($image->gallery->id());
 
-                $result = $model::id($image->primaryKey(),  ['embed' => ['gallery']]);
+                $result = $model::load($image->id(),  ['embed' => ['gallery']]);
                 expect($image->data())->toEqual($result->data());
 
             });
@@ -383,10 +383,10 @@ foreach ($connections as $db => $connection) {
 
                 expect($gallery->save())->toBe(true);
 
-                expect($gallery->primaryKey())->not->toBe(null);
-                expect($gallery->detail->gallery_id)->toBe($gallery->primaryKey());
+                expect($gallery->id())->not->toBe(null);
+                expect($gallery->detail->gallery_id)->toBe($gallery->id());
 
-                $result = $model::id($gallery->primaryKey(),  ['embed' => ['detail']]);
+                $result = $model::load($gallery->id(),  ['embed' => ['detail']]);
                 expect($gallery->data())->toEqual($result->data());
 
             });
@@ -416,18 +416,18 @@ foreach ($connections as $db => $connection) {
 
                 it("saves a hasManyTrough relationship", function() {
 
-                    expect($this->entity->primaryKey())->not->toBe(null);
+                    expect($this->entity->id())->not->toBe(null);
                     expect($this->entity->images_tags)->toHaveLength(3);
                     expect($this->entity->tags)->toHaveLength(3);
 
                     foreach ($this->entity->images_tags as $index => $image_tag) {
-                        expect($image_tag->tag_id)->toBe($image_tag->tag->primaryKey());
-                        expect($image_tag->image_id)->toBe($this->entity->primaryKey());
+                        expect($image_tag->tag_id)->toBe($image_tag->tag->id());
+                        expect($image_tag->image_id)->toBe($this->entity->id());
                         expect($image_tag->tag)->toBe($this->entity->tags[$index]);
                     }
 
                     $model = $this->image;
-                    $result = $model::id($this->entity->primaryKey(),  ['embed' => ['gallery', 'tags']]);
+                    $result = $model::load($this->entity->id(),  ['embed' => ['gallery', 'tags']]);
                     expect($this->entity->data())->toEqual($result->data());
 
                 });
@@ -435,20 +435,20 @@ foreach ($connections as $db => $connection) {
                 it("appends a hasManyTrough entity", function() {
 
                     $model = $this->image;
-                    $reloaded = $model::id($this->entity->primaryKey());
+                    $reloaded = $model::load($this->entity->id());
                     $reloaded->tags[] = ['name' => 'tag4'];
                     expect(count($reloaded->tags))->toBe(4);
 
                     unset($reloaded->tags[0]);
                     expect($reloaded->save())->toBe(true);
 
-                    $persisted = $model::find()->where(['id' => $reloaded->primaryKey()])->embed('tags')->first();
+                    $persisted = $model::find()->where(['id' => $reloaded->id()])->embed('tags')->first();
 
                     expect(count($persisted->tags))->toBe(3);
 
                     foreach ($persisted->images_tags as $index => $image_tag) {
-                        expect($image_tag->tag_id)->toBe($image_tag->tag->primaryKey());
-                        expect($image_tag->image_id)->toBe($persisted->primaryKey());
+                        expect($image_tag->tag_id)->toBe($image_tag->tag->id());
+                        expect($image_tag->image_id)->toBe($persisted->id());
                         expect($image_tag->tag)->toBe($persisted->tags[$index]);
                     }
 
@@ -477,22 +477,22 @@ foreach ($connections as $db => $connection) {
                 $gallery = $model::create($data);
                 expect($gallery->save(['embed' => 'images.tags']))->toBe(true);
 
-                expect($gallery->primaryKey())->not->toBe(null);
+                expect($gallery->id())->not->toBe(null);
                 expect($gallery->images)->toHaveLength(1);
 
                 foreach ($gallery->images as $image) {
-                    expect($image->gallery_id)->toBe($gallery->primaryKey());
+                    expect($image->gallery_id)->toBe($gallery->id());
                     expect($image->images_tags)->toHaveLength(3);
                     expect($image->tags)->toHaveLength(3);
 
                     foreach ($image->images_tags as $index => $image_tag) {
-                        expect($image_tag->tag_id)->toBe($image_tag->tag->primaryKey());
-                        expect($image_tag->image_id)->toBe($image->primaryKey());
+                        expect($image_tag->tag_id)->toBe($image_tag->tag->id());
+                        expect($image_tag->image_id)->toBe($image->id());
                         expect($image_tag->tag)->toBe($image->tags[$index]);
                     }
                 }
 
-                $result = $model::id($gallery->primaryKey(),  ['embed' => ['images.tags']]);
+                $result = $model::load($gallery->id(),  ['embed' => ['images.tags']]);
                 expect($gallery->data())->toEqual($result->data());
 
             });
@@ -544,7 +544,7 @@ foreach ($connections as $db => $connection) {
 
                 expect($image->persist(['custom' => 'option']))->toBe(true);
                 expect($image->exists())->toBe(true);
-                expect($image->primaryKey())->not->toBe(null);
+                expect($image->id())->not->toBe(null);
 
             });
 

@@ -108,15 +108,15 @@ class Schema extends \Chaos\Schema
         if ($entity->exists() === false) {
             $success = $this->insert($values);
         } else {
-            $id = $entity->primaryKey();
+            $id = $entity->id();
             if ($id === null) {
                 throw new DatabaseException("Can't update an entity missing ID data.");
             }
-            $success = $this->update($values, [$this->primaryKey() => $id]);
+            $success = $this->update($values, [$this->key() => $id]);
         }
 
         if ($entity->exists() === false) {
-            $id = $entity->primaryKey() === null ? $this->lastInsertId() : null;
+            $id = $entity->id() === null ? $this->lastInsertId() : null;
             $entity->sync($id, [], ['exists' => true]);
         }
 
@@ -160,10 +160,10 @@ class Schema extends \Chaos\Schema
      */
     public function insert($data, $options = [])
     {
-        $primaryKey = $this->primaryKey();
-        if (!array_key_exists($primaryKey, $data)) {
+        $key = $this->key();
+        if (!array_key_exists($key, $data)) {
             $connection = $this->connection();
-            $data[$primaryKey] = $connection::enabled('default') ? (object) 'default' : null;
+            $data[$key] = $connection::enabled('default') ? (object) 'default' : null;
         }
         $insert = $this->connection()->dialect()->statement('insert');
         $insert->into($this->source())
@@ -251,7 +251,7 @@ class Schema extends \Chaos\Schema
      */
     public function lastInsertId()
     {
-        $sequence = $this->source(). '_' . $this->primaryKey() . '_seq';
+        $sequence = $this->source(). '_' . $this->key() . '_seq';
         return $this->connection()->lastInsertId($sequence);
     }
 }
