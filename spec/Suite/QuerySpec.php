@@ -270,9 +270,9 @@ foreach ($connections as $db => $connection) {
 
                 $result = $this->query->fields([
                     [':as' => [[':plain' => 'COUNT(*)'], [':name' => 'count']]]
-                ])->first();
+                ])->first(['return' => 'array']);
 
-                expect($result->data())->toEqual(['count' => 2]);
+                expect($result)->toEqual(['count' => 2]);
 
             });
 
@@ -523,7 +523,7 @@ foreach ($connections as $db => $connection) {
             it("gets/sets some alias values", function() {
 
                 $image = $this->image;
-                $schema = $image::schema();
+                $schema = $image::definition();
 
                 expect($this->query->alias('images', $schema))->toBe('image');
                 expect($this->query->alias('images'))->toBe('image');
@@ -533,7 +533,7 @@ foreach ($connections as $db => $connection) {
             it("creates unique aliases when a same table is used multiple times", function() {
 
                 $gallery = $this->gallery;
-                $schema = $gallery::schema();
+                $schema = $gallery::definition();
 
                 expect($this->query->alias())->toBe('gallery');
                 expect($this->query->alias('parent', $schema))->toBe('gallery__0');

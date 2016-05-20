@@ -81,11 +81,16 @@ class Schema extends \Chaos\Schema
         $defaults = [
             'whitelist' => null,
             'locked' => $this->locked(),
-            'embed' => true
+            'embed' => $entity->schema()->relations()
         ];
         $options += $defaults;
 
         $options['validate'] = false;
+
+        if ($options['embed'] === true) {
+            $options['embed'] = $entity->hierarchy();
+        }
+
         $options['embed'] = $this->treeify($options['embed']);
 
         if (!$this->_save($entity, 'belongsTo', $options)) {
@@ -119,7 +124,6 @@ class Schema extends \Chaos\Schema
             $id = $entity->id() === null ? $this->lastInsertId() : null;
             $entity->sync($id, [], ['exists' => true]);
         }
-
         return $success && $this->_save($entity, $hasRelations, $options);
     }
 

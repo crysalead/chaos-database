@@ -123,7 +123,7 @@ class Fixture
         }
 
         $model = $this->model();
-        $this->_cache = $model::schema();
+        $this->_cache = $model::definition();
 
         $alteredFields = $this->_alterFields($this->_cache->fields());
 

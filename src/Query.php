@@ -113,7 +113,7 @@ class Query implements IteratorAggregate
 
         $this->_statement = $this->connection()->dialect()->statement('select');
         if ($model) {
-            $schema = $model::schema();
+            $schema = $model::definition();
             $source = $schema->source();
             $this->statement()->from([$source => $this->alias('', $schema)]);
         }
@@ -221,7 +221,7 @@ class Query implements IteratorAggregate
 
         switch ($return) {
             case 'entity':
-                $schema = $model::schema();
+                $schema = $model::definition();
                 $source = $schema->source();
                 $key = $schema->key();
                 $collection = $model::create($collection, ['collector' => $collector, 'type' => 'set']);
@@ -248,7 +248,7 @@ class Query implements IteratorAggregate
                 break;
         }
 
-        $model::schema()->embed($collection, $this->_embed, ['fetchOptions' => $options]);
+        $model::definition()->embed($collection, $this->_embed, ['fetchOptions' => $options]);
         return $collection;
     }
 
@@ -270,7 +270,7 @@ class Query implements IteratorAggregate
     public function first($options = [])
     {
         $result = $this->get($options);
-        return is_object($result) ? $result->rewind() : $result;
+        return is_object($result) ? $result->rewind() : reset($result);
     }
 
     /**
@@ -281,7 +281,7 @@ class Query implements IteratorAggregate
     public function count()
     {
         $model = $this->model();
-        $schema = $model::schema();
+        $schema = $model::definition();
         $this->statement()->fields([':plain' => 'COUNT(*)']);
         $cursor = $this->connection()->query($this->statement()->toString());
         $result = $cursor->current();
@@ -299,7 +299,7 @@ class Query implements IteratorAggregate
         $fields = is_array($fields) && func_num_args() === 1 ? $fields : func_get_args();
 
         $model = $this->model();
-        $schema = $model::schema();
+        $schema = $model::definition();
 
         foreach ($fields as $key => $value) {
             if (is_string($value) && is_numeric($key) && $schema->has($value)) {
@@ -530,7 +530,7 @@ class Query implements IteratorAggregate
     protected function _applyJoins($model, $tree, $basePath, $aliasFrom)
     {
         foreach ($tree as $name => $childs) {
-            $rel = $model::relation($name);
+            $rel = $model::definition()->relation($name);
             $path = $basePath ? $basePath . '.' . $name : $name;
 
             if ($rel->type() !== 'hasManyThrough') {
@@ -541,11 +541,11 @@ class Query implements IteratorAggregate
                 $pathThrough = $path ? $path . '.' . $nameThrough : $nameThrough;
                 $model = $rel->from();
 
-                $relThrough = $model::relation($nameThrough);
+                $relThrough = $model::definition()->relation($nameThrough);
                 $aliasThrough = $this->_join($pathThrough, $relThrough, $aliasFrom);
 
                 $modelThrough = $relThrough->to();
-                $relTo = $modelThrough::relation($name);
+                $relTo = $modelThrough::definition()->relation($name);
                 $to = $this->_join($path, $relTo, $aliasThrough);
             }
 
@@ -570,7 +570,7 @@ class Query implements IteratorAggregate
         }
 
         $model = $rel->to();
-        $schema = $model::schema();
+        $schema = $model::definition();
         $source = $schema->source();
         $toAlias = $this->alias($path, $schema);
 

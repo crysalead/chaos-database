@@ -61,21 +61,6 @@ foreach ($connections as $db => $connection) {
             $this->fixtures->reset();
         });
 
-        describe("->query()", function() {
-
-            it("throw an exception when no model is set", function() {
-
-                $closure = function() {
-                    $schema = new Schema(['connection' => $this->connection]);
-                    $schema->query();
-                };
-
-                expect($closure)->toThrow(new DatabaseException("Missing model for this schema, can't create a query."));
-
-            });
-
-        });
-
         describe("->create()/->drop()", function() {
 
             it("creates/drop a table", function() {
@@ -136,7 +121,7 @@ foreach ($connections as $db => $connection) {
                 it("embeds a hasMany relationship", function() {
 
                     $model = $this->gallery;
-                    $schema = $model::schema();
+                    $schema = $model::definition();
                     $galleries = $model::all();
                     $schema->embed($galleries, ['images']);
 
@@ -151,7 +136,7 @@ foreach ($connections as $db => $connection) {
                 it("embeds a belongsTo relationship", function() {
 
                     $model = $this->image;
-                    $schema = $model::schema();
+                    $schema = $model::definition();
                     $images = $model::all();
                     $schema->embed($images, ['gallery']);
 
@@ -164,7 +149,7 @@ foreach ($connections as $db => $connection) {
                 it("embeds a hasOne relationship", function() {
 
                     $model = $this->gallery;
-                    $schema = $model::schema();
+                    $schema = $model::definition();
                     $galleries = $model::all();
                     $schema->embed($galleries, ['detail', 'images']);
 
@@ -177,7 +162,7 @@ foreach ($connections as $db => $connection) {
                 it("embeds a hasManyTrough relationship", function() {
 
                     $model = $this->image;
-                    $schema = $model::schema();
+                    $schema = $model::definition();
                     $images = $model::all();
                     $schema->embed($images, ['tags']);
 
@@ -191,7 +176,7 @@ foreach ($connections as $db => $connection) {
                 it("embeds nested hasManyTrough relationship", function() {
 
                     $model = $this->image;
-                    $schema = $model::schema();
+                    $schema = $model::definition();
                     $images = $model::all();
                     $schema->embed($images, ['tags.images']);
 
@@ -214,7 +199,7 @@ foreach ($connections as $db => $connection) {
                 it("loads a hasMany relationship", function() {
 
                     $model = $this->gallery;
-                    $schema = $model::schema();
+                    $schema = $model::definition();
                     $galleries = $model::all();
 
                     foreach ($galleries as $gallery) {
@@ -228,7 +213,7 @@ foreach ($connections as $db => $connection) {
                 it("loads a belongsTo relationship", function() {
 
                     $model = $this->image;
-                    $schema = $model::schema();
+                    $schema = $model::definition();
                     $images = $model::all();
 
                     foreach ($images as $image) {
@@ -240,7 +225,7 @@ foreach ($connections as $db => $connection) {
                 it("loads a hasOne relationship", function() {
 
                     $model = $this->gallery;
-                    $schema = $model::schema();
+                    $schema = $model::definition();
                     $galleries = $model::all();
 
                     foreach ($galleries as $gallery) {
@@ -252,7 +237,7 @@ foreach ($connections as $db => $connection) {
                 it("loads a hasManyTrough relationship", function() {
 
                     $model = $this->image;
-                    $schema = $model::schema();
+                    $schema = $model::definition();
                     $images = $model::all();
 
                     foreach ($images as $image) {
@@ -266,7 +251,7 @@ foreach ($connections as $db => $connection) {
                 it("loads nested hasManyTrough relationship", function() {
 
                     $model = $this->image;
-                    $schema = $model::schema();
+                    $schema = $model::definition();
                     $images = $model::all();
 
                     foreach ($images as $image) {
@@ -343,7 +328,7 @@ foreach ($connections as $db => $connection) {
                 }
 
                 $result = $model::load($gallery->id(),  ['embed' => ['images']]);
-                expect($gallery->data())->toEqual($result->data());
+                expect($result->data())->toEqual($gallery->data());
 
             });
 
