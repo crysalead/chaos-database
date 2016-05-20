@@ -36,20 +36,19 @@ describe("Database", function() {
                     'schema'  => 'Chaos\Database\Schema',
                     'dialect' => 'Lead\Sql\Dialect'
                 ],
-                'connect'    => true,
                 'meta'       => [
                     'key'    => 'id',
                     'locked' => true
                 ],
-                'persistent' => true,
+                'dsn'        => null,
                 'host'       => 'localhost',
                 'username'   => 'root',
                 'password'   => '',
                 'database'   => null,
                 'encoding'   => null,
-                'dsn'        => null,
-                'options'    => [],
-                'handlers'   => []
+                'connect'    => true,
+                'persistent' => true,
+                'options'    => []
             ]);
 
         });
@@ -135,44 +134,24 @@ describe("Database", function() {
 
     });
 
-    describe("->formatter()", function() {
-
-        it("gets/sets a formatter", function() {
-
-            $handler = function() {};
-            expect($this->database->formatter('custom', 'mytype', $handler))->toBe($this->database);
-            expect($this->database->formatter('custom', 'mytype'))->toBe($handler);
-
-
-        });
-
-        it("returns the `'_default_'` handler if no handler found", function() {
-
-            $default = $this->database->formatter('cast', '_default_');
-            expect($this->database->formatter('cast', 'mytype'))->toBe($default);
-
-        });
-
-    });
-
-    describe("->formatter()", function() {
-
-        it("gets/sets a formatter", function() {
-
-            $handlers = [
-                'cast' => [
-                    'mytype' => function() {}
-                ]
-            ];
-
-            $this->database->formatters($handlers);
-            expect($this->database->formatters())->toBe($handlers);
-
-        });
-
-    });
-
     describe("->format()", function() {
+
+        it("formats `null` values", function() {
+
+            expect($this->database->format('datasource', 'id', null))->toBe('NULL');
+            expect($this->database->format('datasource', 'serial', null))->toBe('NULL');
+            expect($this->database->format('datasource', 'integer', null))->toBe('NULL');
+            expect($this->database->format('datasource', 'float', null))->toBe('NULL');
+            expect($this->database->format('datasource', 'decimal', null))->toBe('NULL');
+            expect($this->database->format('datasource', 'date', null))->toBe('NULL');
+            expect($this->database->format('datasource', 'datetime', null))->toBe('NULL');
+            expect($this->database->format('datasource', 'boolean', null))->toBe('NULL');
+            expect($this->database->format('datasource', 'null', null))->toBe('NULL');
+            expect($this->database->format('datasource', 'string', null))->toBe('NULL');
+            expect($this->database->format('datasource', '_default_',null))->toBe('NULL');
+            expect($this->database->format('datasource', '_undefined_', null))->toBe('NULL');
+
+        });
 
         it("formats according default `'datasource'` handlers", function() {
 
@@ -192,28 +171,6 @@ describe("Database", function() {
             expect($this->database->format('datasource', 'string', 'abc'))->toBe("'abc'");
             expect($this->database->format('datasource', '_default_', 'abc'))->toBe("'abc'");
             expect($this->database->format('datasource', '_undefined_', 'abc'))->toBe("'abc'");
-
-        });
-
-        it("formats according default `'cast'` handlers", function() {
-
-            expect($this->database->format('cast', 'id', '123'))->toBe(123);
-            expect($this->database->format('cast', 'serial', '123'))->toBe(123);
-            expect($this->database->format('cast', 'integer', '123'))->toBe(123);
-            expect($this->database->format('cast', 'float', '12.3'))->toBe(12.3);
-            expect($this->database->format('cast', 'decimal', '12.3'))->toBe(12.3);
-            $date = DateTime::createFromFormat('Y-m-d', '2014-11-21');
-            expect($this->database->format('cast', 'date', $date)->format('Y-m-d'))->toBe('2014-11-21');
-            expect($this->database->format('cast', 'date', '2014-11-21')->format('Y-m-d'))->toBe('2014-11-21');
-            $datetime = DateTime::createFromFormat('Y-m-d H:i:s', '2014-11-21 10:20:45');
-            expect($this->database->format('cast', 'datetime', $datetime)->format('Y-m-d H:i:s'))->toBe('2014-11-21 10:20:45');
-            expect($this->database->format('cast', 'datetime', '2014-11-21 10:20:45')->format('Y-m-d H:i:s'))->toBe('2014-11-21 10:20:45');
-            expect($this->database->format('cast', 'datetime', '1416565245')->format('Y-m-d H:i:s'))->toBe('2014-11-21 10:20:45');
-            expect($this->database->format('cast', 'boolean', 'TRUE'))->toBe(true);
-            expect($this->database->format('cast', 'null', 'NULL'))->toBe(null);
-            expect($this->database->format('cast', 'string', 'abc'))->toBe('abc');
-            expect($this->database->format('cast', '_default_', 'abc'))->toBe('abc');
-            expect($this->database->format('cast', '_undefined_', 'abc'))->toBe('abc');
 
         });
 

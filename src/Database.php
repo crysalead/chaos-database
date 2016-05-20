@@ -6,12 +6,13 @@ use PDOException;
 use PDOStatement;
 use DateTime;
 use Lead\Set\Set;
+use Chaos\Source;
 use Chaos\Database\DatabaseException;
 
 /**
  * PDO driver adapter base class
  */
-abstract class Database
+class Database extends Source
 {
     /**
      * Default entity and set classes used by subclasses of `Source`.
@@ -49,57 +50,45 @@ abstract class Database
     protected $_dialect = null;
 
     /**
-     * Type conversion definitions.
+     * Constructor.
      *
-     * @var array
-     */
-    protected $_handlers = [];
-
-    /**
-     * Import/export casting definitions.
-     *
-     * @var array
-     */
-    protected $_formatters = [];
-
-    /**
-     * Creates the database object and set default values for it.
-     *
-     * Options defined:
-     *  - `'dns'`       : _string_ The full dsn connection url. Defaults to `null`.
-     *  - `'database'`  : _string_ Name of the database to use. Defaults to `null`.
-     *  - `'host'`      : _string_ Name/address of server to connect to. Defaults to 'localhost'.
-     *  - `'username'`  : _string_ Username to use when connecting to server. Defaults to 'root'.
-     *  - `'password'`  : _string_ Password to use when connecting to server. Defaults to `''`.
-     *  - `'encoding'`  : _string_ The database character encoding.
-     *  - `'persistent'`: _boolean_ If true a persistent connection will be attempted, provided the
-     *                    adapter supports it. Defaults to `true`.
-     *  - `'dialect'`       : _object_ A SQL dialect adapter
-     *
-     * @param  $config array Array of configuration options.
-     * @return Database object.
+     * @param  $config array Configuration options. Allowed options:
+     *                       - `'classes'`   : _array_   Some classes dependencies.
+     *                       - `'meta  '`    : _array_   Some meta data.
+     *                       - `'client'`    : _object_  The PDO instance (optionnal).
+     *                       - `'dialect'`   : _object_  A SQL dialect adapter
+     *                       - `'dns'`       : _string_  The full dsn connection url. Defaults to `null`.
+     *                       - `'host'`      : _string_  Name/address of server to connect to. Defaults to 'localhost'.
+     *                       - `'database'`  : _string_  Name of the database to use. Defaults to `null`.
+     *                       - `'username'`  : _string_  Username to use when connecting to server. Defaults to 'root'.
+     *                       - `'password'`  : _string_  Password to use when connecting to server. Defaults to `''`.
+     *                       - `'encoding'`  : _string_  The database character encoding.
+     *                       - `'connect'`   : _boolean_ Autoconnect on construct if `true`. Defaults to `true`.
+     *                       - `'persistent'`: _boolean_ If true a persistent connection will be attempted, provided the
+     *                                         adapter supports it. Defaults to `true`.
+     *                       - `'options'`   : _array_   Some PDO connection options to set.
      */
     public function __construct($config = [])
     {
+        parent::__construct($config);
         $defaults = [
             'classes' => [
                 'cursor'  => 'Chaos\Database\Cursor',
                 'schema'  => 'Chaos\Database\Schema',
                 'dialect' => 'Lead\Sql\Dialect'
             ],
-            'client'     => null,
-            'connect'    => true,
             'meta'       => ['key' => 'id', 'locked' => true],
-            'persistent' => true,
+            'client'     => null,
+            'dialect'    => null,
+            'dsn'        => null,
             'host'       => 'localhost',
             'username'   => 'root',
             'password'   => '',
             'database'   => null,
             'encoding'   => null,
-            'dsn'        => null,
-            'options'    => [],
-            'dialect'    => null,
-            'handlers'   => []
+            'connect'    => true,
+            'persistent' => true,
+            'options'    => []
         ];
         $config = Set::merge($defaults, $config);
         $this->_config = $config;
@@ -110,7 +99,6 @@ abstract class Database
 
         $this->_dialect = $config['dialect'];
         unset($this->_config['dialect']);
-        $this->_handlers = Set::merge($this->_handlers(), $config['handlers']);
 
         if ($this->_dialect === null) {
             $dialect = $this->_classes['dialect'];
@@ -133,18 +121,6 @@ abstract class Database
         }
 
         $handlers = $this->_handlers;
-
-        $this->formatter('cast', 'id',        $handlers['cast']['integer']);
-        $this->formatter('cast', 'serial',    $handlers['cast']['integer']);
-        $this->formatter('cast', 'integer',   $handlers['cast']['integer']);
-        $this->formatter('cast', 'float',     $handlers['cast']['float']);
-        $this->formatter('cast', 'decimal',   $handlers['cast']['decimal']);
-        $this->formatter('cast', 'date',      $handlers['cast']['date']);
-        $this->formatter('cast', 'datetime',  $handlers['cast']['datetime']);
-        $this->formatter('cast', 'boolean',   $handlers['cast']['boolean']);
-        $this->formatter('cast', 'null',      $handlers['cast']['null']);
-        $this->formatter('cast', 'string',    $handlers['cast']['string']);
-        $this->formatter('cast', '_default_', $handlers['cast']['string']);
 
         $this->formatter('datasource', 'id',        $handlers['datasource']['string']);
         $this->formatter('datasource', 'serial',    $handlers['datasource']['string']);
@@ -379,35 +355,6 @@ abstract class Database
     }
 
     /**
-     * Gets/sets a formatter handler.
-     *
-     * @param  string   $type          The type name.
-     * @param  callable $importHandler The callable import handler.
-     * @param  callable $exportHandler The callable export handler. If not set use `$importHandler`.
-     */
-    public function formatter($mode, $type, $handler = null)
-    {
-        if (func_num_args() === 2) {
-            return isset($this->_formatters[$mode][$type]) ? $this->_formatters[$mode][$type] : $this->_formatters[$mode]['_default_'];
-        }
-        $this->_formatters[$mode][$type] = $handler;
-        return $this;
-    }
-
-    /**
-     * Gets/sets all formatters.
-     *
-     */
-    public function formatters($formatters = null)
-    {
-        if (!func_num_args()) {
-            return $this->_formatters;
-        }
-        $this->_formatters = $formatters;
-        return $this;
-    }
-
-    /**
      * Formats a value according to its definition.
      *
      * @param   string $mode  The format mode (i.e. `'cast'` or `'datasource'`).
@@ -417,16 +364,8 @@ abstract class Database
      */
     public function format($mode, $type, $value, $options = [])
     {
-        $type = $value === null ? 'null' : $type;
-
-        $formatter = null;
-
-        if (isset($this->_formatters[$mode][$type])) {
-            $formatter = $this->_formatters[$mode][$type];
-        } elseif (isset($this->_formatters[$mode]['_default_'])) {
-            $formatter = $this->_formatters[$mode]['_default_'];
-        }
-        return $formatter ? $formatter($value, $options) : $value;
+        $type = ($mode === 'datasource' && $value === null) ? 'null' : $type;
+        return parent::format($mode, $type, $value, $options);
     }
 
     /**
@@ -495,5 +434,8 @@ abstract class Database
      * @param mixed $encoding
      * @return mixed.
      */
-    abstract public function encoding($encoding = null);
+    public function encoding($encoding = null)
+    {
+        throw new DatabaseException('Encoding is not supported by this driver.');
+    }
 }
