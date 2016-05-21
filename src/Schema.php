@@ -56,10 +56,15 @@ class Schema extends \Chaos\Schema
             throw new DatabaseException("Missing table name for this schema.");
         }
 
+        $columns = [];
+        foreach ($this->fields() as $name) {
+            $columns[$name] = $this->field($name);
+        }
+
         $query = $this->connection()->dialect()->statement('create table');
         $query->ifNotExists($options['soft'])
               ->table($this->_source)
-              ->columns($this->fields())
+              ->columns($columns)
               ->constraints($this->meta('constraints'))
               ->meta($this->meta('table'));
 
@@ -104,10 +109,10 @@ class Schema extends \Chaos\Schema
         }
 
         if (($whitelist = $options['whitelist']) || $options['locked']) {
-            $whitelist = $whitelist ?: array_keys($this->fields());
+            $whitelist = $whitelist ?: $this->fields();
         }
 
-        $exclude = array_diff($this->relations(false), array_keys($this->fields()));
+        $exclude = array_diff($this->relations(false), $this->fields());
         $values = array_diff_key($entity->get(), array_fill_keys($exclude, true));
 
         if ($entity->exists() === false) {

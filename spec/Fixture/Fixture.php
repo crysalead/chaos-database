@@ -125,7 +125,12 @@ class Fixture
         $model = $this->model();
         $this->_cache = $model::definition();
 
-        $alteredFields = $this->_alterFields($this->_cache->fields());
+        $fields = [];
+        foreach ($this->_cache->fields() as $name) {
+            $fields[$name] = $this->_cache->field($name);
+        }
+
+        $alteredFields = $this->_alterFields($fields);
 
         foreach ($alteredFields as $name => $value) {
             $this->_cache->set($name, $value);
@@ -147,7 +152,12 @@ class Fixture
             $records = [$records];
         }
 
-        $fields = $this->schema()->fields('type');
+        $schema = $this->schema();
+        $fields = [];
+
+        foreach ($schema->fields() as $name) {
+            $fields[$name] = $schema->field($name, 'type');
+        }
 
         foreach ($records as $record) {
             $data = $this->_alterRecord($record);
