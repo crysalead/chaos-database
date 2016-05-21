@@ -125,16 +125,7 @@ class Fixture
         $model = $this->model();
         $this->_cache = $model::definition();
 
-        $fields = [];
-        foreach ($this->_cache->fields() as $name) {
-            $fields[$name] = $this->_cache->field($name);
-        }
-
-        $alteredFields = $this->_alterFields($fields);
-
-        foreach ($alteredFields as $name => $value) {
-            $this->_cache->set($name, $value);
-        }
+        $this->_alterSchema($this->_cache);
 
         return $this->_cache;
     }
@@ -153,11 +144,7 @@ class Fixture
         }
 
         $schema = $this->schema();
-        $fields = [];
-
-        foreach ($schema->fields() as $name) {
-            $fields[$name] = $schema->field($name, 'type');
-        }
+        $fields = array_fill_keys($schema->fields(), true);
 
         foreach ($records as $record) {
             $data = $this->_alterRecord($record);
@@ -170,33 +157,36 @@ class Fixture
     /**
      * Formats fields according the alter configuration.
      *
-     * @param  array $fields An array of fields
+     * @param  array $schema The schema to alter
      * @return array         Returns the modified fields.
      */
-    protected function _alterFields($fields = []) {
+    protected function _alterSchema($schema) {
         foreach ($this->_alters as $mode => $values) {
             foreach ($values as $key => $value) {
                 switch($mode) {
                     case 'add':
-                        $fields[$key] = $value;
+                        $schema->set($key, $value);
                         break;
                     case 'change':
-                        if (isset($fields[$key]) && isset($value['to'])) {
-                            $field = $fields[$key];
-                            unset($fields[$key]);
+                        if (!$schema->has($key)) {
+                            throw new DatabaseException("Can't change the following unexisting field: `'{$key}'`.");
+                        }
+                        $field = $schema->field($key);
+                        if (isset($value['to'])) {
+                            $schema->remove($key);
                             $to = $value['to'];
                             unset($value['to']);
                             unset($value['value']);
-                            $fields[$to] = $value + $field;
+                            $schema->set($to, $value + $field);
                         }
                         break;
                     case 'drop':
-                        unset($fields[$value]);
+                        $schema->remove($key);
                         break;
                 }
             }
         }
-        return $fields;
+        return $schema;
     }
 
     /**
