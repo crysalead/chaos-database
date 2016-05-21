@@ -165,7 +165,7 @@ class Fixture
             foreach ($values as $key => $value) {
                 switch($mode) {
                     case 'add':
-                        $schema->set($key, $value);
+                        $schema->column($key, $value);
                         break;
                     case 'change':
                         if (!$schema->has($key)) {
@@ -177,7 +177,7 @@ class Fixture
                             $to = $value['to'];
                             unset($value['to']);
                             unset($value['value']);
-                            $schema->set($to, $value + $field);
+                            $schema->column($to, $value + $field);
                         }
                         break;
                     case 'drop':

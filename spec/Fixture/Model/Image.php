@@ -5,10 +5,10 @@ class Image extends BaseModel
 {
     protected static function _define($schema)
     {
-        $schema->set('id', ['type' => 'serial']);
-        $schema->set('gallery_id', ['type' => 'integer']);
-        $schema->set('name', ['type' => 'string']);
-        $schema->set('title', ['type' => 'string', 'length' => 50]);
+        $schema->column('id', ['type' => 'serial']);
+        $schema->column('gallery_id', ['type' => 'integer']);
+        $schema->column('name', ['type' => 'string']);
+        $schema->column('title', ['type' => 'string', 'length' => 50]);
 
         $schema->belongsTo('gallery', Gallery::class, [
             'keys' => ['gallery_id' => 'id']

@@ -224,22 +224,22 @@ class Database extends Source
     /**
      * Gets the column schema for a given table.
      *
-     * @param  mixed  $name   Specifies the table name for which the schema should be returned.
-     * @param  array  $fields Any schema data pre-defined by the model.
+     * @param  mixed  $name    Specifies the table name for which the schema should be returned.
+     * @param  array  $columns Any schema data pre-defined by the model.
      * @param  array  $meta
      * @return object         Returns a shema definition.
      */
-    public function describe($name,  $fields = [], $meta = [])
+    public function describe($name,  $columns = [], $meta = [])
     {
         if (func_num_args() === 1) {
-            $fields = $this->fields($name);
+            $columns = $this->fields($name);
         }
 
         $schema = $this->_classes['schema'];
         return new $schema([
             'connection' => $this,
             'source'     => $name,
-            'fields'     => $fields,
+            'columns'    => $columns,
             'meta'       => $meta
         ]);
     }

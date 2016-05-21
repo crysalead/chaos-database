@@ -71,7 +71,7 @@ foreach ($connections as $db => $connection) {
                     'connection' => $this->connection,
                     'source'     => 'test_table'
                 ]);
-                $schema->set('id', ['type' => 'serial']);
+                $schema->column('id', ['type' => 'serial']);
 
                 $schema->create();
                 expect($this->connection->sources())->toBe(['test_table' => 'test_table']);
