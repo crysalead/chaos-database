@@ -171,7 +171,7 @@ class Schema extends \Chaos\Schema
         }
         $insert = $this->connection()->dialect()->statement('insert');
         $insert->into($this->source())
-               ->values($data);
+               ->values($data, [$this, 'type']);
 
         return $this->connection()->query($insert->toString());
     }
@@ -192,7 +192,7 @@ class Schema extends \Chaos\Schema
         $update = $this->connection()->dialect()->statement('update');
         $update->table($this->source())
                ->where($conditions)
-               ->values($data);
+               ->values($data, [$this, 'type']);
 
         return $this->connection()->query($update->toString());
     }
