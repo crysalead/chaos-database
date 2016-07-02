@@ -167,7 +167,7 @@ class Fixtures
     {
         foreach ($this->_instances as $instance) {
             $model = $instance->model();
-            $model::config();
+            $model::reset();
         }
         $this->_instances = [];
     }

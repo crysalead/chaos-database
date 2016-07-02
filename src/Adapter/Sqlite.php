@@ -53,6 +53,10 @@ class Sqlite extends \Chaos\Database\Database
         ];
         $config = Set::merge($defaults, $config);
         parent::__construct($config);
+
+        $this->formatter('datasource', 'boolean', function($value, $options) {
+            return $value ? '1' : '0';
+        });
     }
 
     /**
@@ -111,7 +115,7 @@ class Sqlite extends \Chaos\Database\Database
                     }
                     break;
                 case 'boolean':
-                    $default = $default === 'TRUE';
+                    $default = $default === '1';
                     break;
                 case 'datetime':
                     $default = $default !== 'CURRENT_TIMESTAMP' ? $default : null;

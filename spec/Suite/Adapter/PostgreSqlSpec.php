@@ -229,20 +229,20 @@ describe("PostgreSql", function() {
 
     });
 
-    describe("->format()", function() {
+    describe("->convert()", function() {
 
         it("formats according default `'datasource'` handlers", function() {
 
-            expect($this->adapter->format('datasource', 'boolean', true))->toBe('true');
-            expect($this->adapter->format('datasource', 'boolean', false))->toBe('false');
-            expect($this->adapter->format('datasource', 'array', [1, 2, 3]))->toBe('{1,2,3}');
+            expect($this->adapter->convert('datasource', 'boolean', true))->toBe('true');
+            expect($this->adapter->convert('datasource', 'boolean', false))->toBe('false');
+            expect($this->adapter->convert('datasource', 'array', [1, 2, 3]))->toBe('{1,2,3}');
 
         });
 
         it("formats according default `'cast'` handlers", function() {
 
-            expect($this->adapter->format('cast', 'boolean', 't'))->toBe(true);
-            expect($this->adapter->format('cast', 'boolean', 'f'))->toBe(false);
+            expect($this->adapter->convert('cast', 'boolean', 't'))->toBe(true);
+            expect($this->adapter->convert('cast', 'boolean', 'f'))->toBe(false);
 
         });
 

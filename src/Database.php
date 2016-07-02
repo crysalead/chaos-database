@@ -111,7 +111,7 @@ class Database extends Source
                     if (is_array($type)) {
                         $type = call_user_func($type, $states['name']);
                     }
-                    return $this->format('datasource', $type, $value);
+                    return $this->convert('datasource', $type, $value);
                 }
             ]);
         }
@@ -132,7 +132,6 @@ class Database extends Source
         $this->formatter('datasource', 'boolean',   $handlers['datasource']['boolean']);
         $this->formatter('datasource', 'null',      $handlers['datasource']['null']);
         $this->formatter('datasource', 'string',    $handlers['datasource']['quote']);
-        $this->formatter('datasource', 'object',    $handlers['datasource']['object']);
         $this->formatter('datasource', '_default_', $handlers['datasource']['quote']);
     }
 
@@ -303,7 +302,7 @@ class Database extends Source
                     return !!$value;
                 },
                 'date'    => function($value, $options = []) {
-                    return $this->format('cast', 'datetime', $value, ['format' => 'Y-m-d']);
+                    return $this->convert('cast', 'datetime', $value, ['format' => 'Y-m-d'])->setTime(0, 0, 0);
                 },
                 'datetime'    => function($value, $options = []) {
                     $options += ['format' => 'Y-m-d H:i:s'];
@@ -327,7 +326,7 @@ class Database extends Source
                     return $this->dialect()->quote((string) $value);
                 },
                 'date' => function($value, $options = []) {
-                    return $this->format('datasource', 'datetime', $value, ['format' => 'Y-m-d']);
+                    return $this->convert('datasource', 'datetime', $value, ['format' => 'Y-m-d']);
                 },
                 'datetime' => function($value, $options = []) {
                     $options += ['format' => 'Y-m-d H:i:s'];
@@ -343,12 +342,6 @@ class Database extends Source
                 },
                 'null'    => function($value, $options = []) {
                     return 'NULL';
-                },
-                'object'  => function($value, $options = []) {
-                    if (isset($value->scalar)) {
-                        return $value->scalar;
-                    }
-                    return (string) $value;
                 }
             ]
         ];
@@ -362,10 +355,17 @@ class Database extends Source
      * @param   mixed  $value The value to format.
      * @return  mixed         The formated value.
      */
-    public function format($mode, $type, $value, $options = [])
+    public function convert($mode, $type, $value, $options = [])
     {
         $type = ($mode === 'datasource' && $value === null) ? 'null' : $type;
-        return parent::format($mode, $type, $value, $options);
+        if (is_array($value)) {
+            $key = key($value);
+            $dialect = $this->dialect();
+            if ($dialect && $dialect->isOperator($key)) {
+               return $dialect->format($key, $value[$key]);
+            }
+        }
+        return parent::convert($mode, $type, $value, $options);
     }
 
     /**

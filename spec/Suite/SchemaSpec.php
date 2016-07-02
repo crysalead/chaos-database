@@ -2,6 +2,7 @@
 namespace Chaos\Database\Spec\Suite;
 
 use Lead\Set\Set;
+use Chaos\ChaosException;
 use Chaos\Database\DatabaseException;
 use Chaos\Model;
 use Chaos\Database\Query;
@@ -491,7 +492,7 @@ foreach ($connections as $db => $connection) {
                     $gallery->save();
                 };
 
-                expect($closure)->toThrow(new DatabaseException("Can't update an entity missing ID data."));
+                expect($closure)->toThrow(new ChaosException("Existing entities must have a valid ID."));
 
             });
 

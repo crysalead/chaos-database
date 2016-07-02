@@ -78,7 +78,7 @@ class Fixture
         $this->_model = $config['model'];
 
         $model = $this->_model;
-        $model::config(['connection' => $this->connection()]);
+        $model::connection($this->connection());
     }
 
     /**

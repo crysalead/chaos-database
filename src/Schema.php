@@ -99,7 +99,7 @@ class Schema extends \Chaos\Schema
 
         $hasRelations = ['hasMany', 'hasOne'];
 
-        if (!$entity->modified()) {
+        if ($entity->exists() && !$entity->modified()) {
             return $this->_save($entity, $hasRelations, $options);
         }
 
@@ -167,7 +167,7 @@ class Schema extends \Chaos\Schema
         $key = $this->key();
         if (!array_key_exists($key, $data)) {
             $connection = $this->connection();
-            $data[$key] = $connection::enabled('default') ? (object) 'default' : null;
+            $data[$key] = $connection::enabled('default') ? [':plain' => 'default'] : null;
         }
         $insert = $this->connection()->dialect()->statement('insert');
         $insert->into($this->source())
@@ -206,11 +206,11 @@ class Schema extends \Chaos\Schema
      * @param mixed    $conditions An array of key/value pairs representing the scope of the records or
      *                             documents to be deleted.
      * @param array    $options    Any database-specific options to use when performing the operation. See
-     *                             the `delete()` method of the corresponding backend database for available
+     *                             the `truncate()` method of the corresponding backend database for available
      *                             options.
      * @return boolean             Returns `true` if the remove operation succeeded, otherwise `false`.
      */
-    public function delete($conditions = [], $options = [])
+    public function truncate($conditions = [], $options = [])
     {
         $delete = $this->connection()->dialect()->statement('delete');
 
@@ -257,5 +257,32 @@ class Schema extends \Chaos\Schema
     {
         $sequence = $this->source(). '_' . $this->key() . '_seq';
         return $this->connection()->lastInsertId($sequence);
+    }
+
+    /**
+     * Formats a value according to its type.
+     *
+     * @param   string $mode    The format mode (i.e. `'cast'` or `'datasource'`).
+     * @param   string $type    The field name.
+     * @param   mixed  $value   The value to format.
+     * @param   mixed  $options The options array to pass the the formatter handler.
+     * @return  mixed           The formated value.
+     */
+    public function convert($mode, $type, $value, $options = [])
+    {
+        $formatter = null;
+        if (is_array($value)) {
+            $key = key($value);
+            $connection = $this->_connection;
+            if ($connection && $connection->dialect()->isOperator($key)) {
+               return $connection->dialect()->format($key, $value[$key]);
+            }
+        }
+        if (isset($this->_formatters[$mode][$type])) {
+            $formatter = $this->_formatters[$mode][$type];
+        } elseif (isset($this->_formatters[$mode]['_default_'])) {
+            $formatter = $this->_formatters[$mode]['_default_'];
+        }
+        return $formatter ? $formatter($value, $options) : $value;
     }
 }

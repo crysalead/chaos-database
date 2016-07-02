@@ -106,11 +106,12 @@ foreach ($connections as $db => $connection) {
 
                 $this->fixtures->populate('gallery');
 
-                $result = $this->query->order(['id'])->all()->data();
-                expect($result)->toEqual([
+                $result = $this->query->order(['id'])->all();
+                expect($result->data())->toEqual([
                     ['id' => '1', 'name' => 'Foo Gallery'],
                     ['id' => '2', 'name' => 'Bar Gallery']
                 ]);
+                expect($result->exists())->toBe(true);
 
             });
 

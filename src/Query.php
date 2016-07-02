@@ -218,16 +218,20 @@ class Query implements IteratorAggregate
         ]);
 
         $model = $this->model();
-
         switch ($return) {
             case 'entity':
                 $schema = $model::definition();
                 $source = $schema->source();
                 $key = $schema->key();
-                $collection = $model::create($collection, ['collector' => $collector, 'type' => 'set']);
+                $collection = $model::create($collection, [
+                    'collector' => $collector,
+                    'type' => 'set',
+                    'exists' => true
+                ]);
                 foreach ($cursor as $record) {
-                    if (!empty($record[$key]) && $collector->exists($source, $record[$key])) {
-                        $collection[] = $collector->get($source, $record[$key]);
+                    $uuid = isset($record[$key]) ? $source . ':' . $record[$key] : null;
+                    if (!empty($record[$key]) && $collector->has($uuid)) {
+                        $collection[] = $collector->get($uuid);
                     } else {
                         $collection[] = $model::create($record, [
                             'collector' => $collector,
