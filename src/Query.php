@@ -21,18 +21,18 @@ class Query implements IteratorAggregate
     ];
 
     /**
-     * The connection to the datasource.
-     *
-     * @var object
-     */
-    protected $_connection = null;
-
-    /**
      * The fully namespaced model class name on which this query is starting.
      *
      * @var string
      */
     protected $_model = null;
+
+    /**
+     * The schema instance.
+     *
+     * @var object
+     */
+    protected $_schema = null;
 
     /**
      * A finders instance.
@@ -94,29 +94,36 @@ class Query implements IteratorAggregate
      * Creates a new record object with default values.
      *
      * @param array $config Possible options are:
-     *                      - `'type'`       _string_ : The type of query.
-     *                      - `'connection'` _object_ : The connection instance.
-     *                      - `'model'`      _string_ : The model class.
+     *                      - `'model'`   _string_ : The model class.
+     *                      - `'schema'`  _object_ : Alternatively a schema instance can be provided instead of the model.
+     *                      - `'finders'` _array_  : Handy finders.
+     *                      - `'query'`   _array_  : The query.
      */
     public function __construct($config = [])
     {
         $defaults = [
-            'connection' => null,
-            'model'      => null,
-            'finders'    => null,
-            'query'      => []
+            'model'   => null,
+            'schema'  => null,
+            'finders' => null,
+            'query'   => []
         ];
         $config = Set::merge($defaults, $config);
-        $model = $this->_model = $config['model'];
-        $this->_finders = $config['finders'];
-        $this->_connection = $config['connection'];
 
-        $this->_statement = $this->connection()->dialect()->statement('select');
-        if ($model) {
-            $schema = $model::definition();
-            $source = $schema->source();
-            $this->statement()->from([$source => $this->alias('', $schema)]);
+        if ($config['model']) {
+            $this->_model = $config['model'];
+            $model = $this->_model;
+            $this->_schema = $model::definition();
+        } else {
+            $this->_schema = $config['schema'];
         }
+
+        $this->_finders = $config['finders'];
+
+        $schema = $this->schema();
+        $this->_statement = $schema->connection()->dialect()->statement('select');
+        $source = $schema->source();
+        $this->statement()->from([$source => $this->alias('', $schema)]);
+
         foreach ($config['query'] as $key => $value) {
             $this->{$key}($value);
         }
@@ -140,17 +147,17 @@ class Query implements IteratorAggregate
     }
 
     /**
-     * Gets the connection object to which this query is bound.
+     * Gets the schema object to which this query is bound.
      *
-     * @return object    Returns a connection instance.
-     * @throws Exception Throws a `DatabaseException` if a connection isn't set.
+     * @return object    Returns a schema instance.
+     * @throws Exception Throws a `DatabaseException` if a schema isn't set.
      */
-    public function connection()
+    public function schema()
     {
-        if (!$this->_connection) {
-            throw new DatabaseException("Error, missing connection for this query.");
+        if (!$this->_schema) {
+            throw new DatabaseException("Error, missing schema for this query.");
         }
-        return $this->_connection;
+        return $this->_schema;
     }
 
     /**
@@ -213,21 +220,32 @@ class Query implements IteratorAggregate
         $collection = [];
         $return = $options['return'];
 
-        $cursor = $this->connection()->query($this->statement()->toString(), [], [
+        $schema = $this->schema();
+
+        $cursor = $schema->connection()->query($this->statement()->toString(), [], [
             'fetch' => $return === 'object' ? PDO::FETCH_OBJ : $options['fetch']
         ]);
 
-        $model = $this->model();
         switch ($return) {
             case 'entity':
-                $schema = $model::definition();
                 $source = $schema->source();
                 $key = $schema->key();
+
+                $model = $this->model();
+                if (!$model) {
+                    throw new DatabaseException("Missing model for this query, set `'return'` to `'array'` to get row data.");
+                }
                 $collection = $model::create($collection, [
                     'collector' => $collector,
                     'type' => 'set',
                     'exists' => true
                 ]);
+
+                if ($this->statement()->data('limit')) {
+                    $count = $this->count();
+                    $collection->meta(['count' => $count]);
+                }
+
                 foreach ($cursor as $record) {
                     $uuid = isset($record[$key]) ? $source . ':' . $record[$key] : null;
                     if (!empty($record[$key]) && $collector->has($uuid)) {
@@ -251,8 +269,7 @@ class Query implements IteratorAggregate
                 throw new DatabaseException("Invalid `'{$options['return']}'` mode as `'return'` value");
                 break;
         }
-
-        $model::definition()->embed($collection, $this->_embed, ['fetchOptions' => $options]);
+        $schema->embed($collection, $this->_embed, ['fetchOptions' => $options]);
         return $collection;
     }
 
@@ -284,10 +301,17 @@ class Query implements IteratorAggregate
      */
     public function count()
     {
-        $model = $this->model();
-        $schema = $model::definition();
-        $this->statement()->fields([':plain' => 'COUNT(*)']);
-        $cursor = $this->connection()->query($this->statement()->toString());
+        $connection = $this->schema()->connection();
+        $statement = $this->statement();
+        $counter = $connection->dialect()->statement('select');
+        $counter->fields([':plain' => 'COUNT(*)']);
+        $counter->data('from', $statement->data('from'));
+        $counter->data('joins', $statement->data('joins'));
+        $counter->data('where', $statement->data('where'));
+        $counter->data('group', $statement->data('group'));
+        $counter->data('having', $statement->data('having'));
+
+        $cursor = $connection->query($counter->toString());
         $result = $cursor->current();
         return (int) current($result);
     }
@@ -302,8 +326,7 @@ class Query implements IteratorAggregate
     {
         $fields = is_array($fields) && func_num_args() === 1 ? $fields : func_get_args();
 
-        $model = $this->model();
-        $schema = $model::definition();
+        $schema = $this->schema();
 
         foreach ($fields as $key => $value) {
             if (is_string($value) && is_numeric($key) && $schema->has($value)) {
@@ -500,7 +523,7 @@ class Query implements IteratorAggregate
     protected function _applyHas()
     {
         $tree = Set::expand(array_fill_keys(array_keys($this->has()), false));
-        $this->_applyJoins($this->model(), $tree, '', $this->alias());
+        $this->_applyJoins($this->schema(), $tree, '', $this->alias());
         foreach ($this->has() as $path => $conditions) {
             $this->where($conditions, $this->alias($path));
         }
@@ -526,15 +549,15 @@ class Query implements IteratorAggregate
     /**
      * Applies joins.
      *
-     * @param object $model     The model to perform joins on.
+     * @param object $schema    The schema to perform joins on.
      * @param array  $tree      The tree of relations to join.
      * @param array  $basePath  The base relation path.
      * @param string $aliasFrom The alias name of the from model.
      */
-    protected function _applyJoins($model, $tree, $basePath, $aliasFrom)
+    protected function _applyJoins($schema, $tree, $basePath, $aliasFrom)
     {
         foreach ($tree as $name => $childs) {
-            $rel = $model::definition()->relation($name);
+            $rel = $schema->relation($name);
             $path = $basePath ? $basePath . '.' . $name : $name;
 
             if ($rel->type() !== 'hasManyThrough') {
@@ -554,7 +577,8 @@ class Query implements IteratorAggregate
             }
 
             if (!empty($childs)) {
-                $this->_applyJoins($rel->to(), $childs, $path, $to);
+                $model = $rel->to();
+                $this->_applyJoins($model::definition(), $childs, $path, $to);
             }
         }
     }

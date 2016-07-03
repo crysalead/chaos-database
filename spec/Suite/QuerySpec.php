@@ -7,6 +7,7 @@ use Chaos\Database\DatabaseException;
 use Chaos\Model;
 use Chaos\Finders;
 use Chaos\Database\Query;
+use Chaos\Database\Schema;
 
 use Kahlan\Plugin\Stub;
 
@@ -54,8 +55,7 @@ foreach ($connections as $db => $connection) {
             $this->tag = $this->fixtures->get('tag')->model();
 
             $this->query = new Query([
-                'model'      => $this->gallery,
-                'connection' => $this->connection
+                'model'      => $this->gallery
             ]);
 
         });
@@ -65,22 +65,15 @@ foreach ($connections as $db => $connection) {
             $this->fixtures->reset();
         });
 
-        describe("->connection()", function() {
+        describe("->__construct()", function() {
 
-            it("returns the connection", function() {
-
-                expect($this->query->connection())->toBe($this->connection);
-
-            });
-
-            it("throws an error if no connection is available", function() {
+            it("throws an error if no schema is available", function() {
 
                 $closure = function() {
-                    $this->query = new Query(['model' => $this->gallery]);
-                    $this->query->connection();
+                    $this->query = new Query();
                 };
 
-                expect($closure)->toThrow(new DatabaseException("Error, missing connection for this query."));
+                expect($closure)->toThrow(new DatabaseException("Error, missing schema for this query."));
 
             });
 
@@ -179,6 +172,41 @@ foreach ($connections as $db => $connection) {
 
             });
 
+            context("using queries with no model", function() {
+
+                beforeEach(function() {
+                    $gallery = $this->gallery;
+                    $this->query = new Query([
+                        'schema' => $gallery::definition()
+                    ]);
+                });
+
+                it("finds all records using object hydration", function() {
+
+                    $this->fixtures->populate('gallery');
+
+                    $result = $this->query->order(['id'])->get(['return' => 'array']);
+
+                    expect($result)->toEqual([
+                        ['id' => 1, 'name' => 'Foo Gallery'],
+                        ['id' => 2, 'name' => 'Bar Gallery']
+                    ]);
+
+                });
+
+                it("throws an error if the return mode has been set to `'entity'`", function() {
+
+                    $closure = function() {
+                        $this->fixtures->populate('gallery');
+                        $this->query->get();
+                    };
+
+                    expect($closure)->toThrow(new DatabaseException("Missing model for this query, set `'return'` to `'array'` to get row data."));
+
+                });
+
+            });
+
         });
 
         describe("->first()", function() {
@@ -223,7 +251,6 @@ foreach ($connections as $db => $connection) {
 
                 $query = new Query([
                     'model'      => $this->gallery,
-                    'connection' => $this->connection,
                     'finders'    => $finders
                 ]);
 
@@ -251,7 +278,6 @@ foreach ($connections as $db => $connection) {
                 $closure = function() {
                     $query = new Query([
                         'model'      => $this->gallery,
-                        'connection' => $this->connection,
                         'finders'    => new Finders()
                     ]);
                     $query->fooGallery();
@@ -312,8 +338,7 @@ foreach ($connections as $db => $connection) {
                 $this->fixtures->populate('image');
 
                 $query = new Query([
-                    'model'      => $this->image,
-                    'connection' => $this->connection
+                    'model'      => $this->image
                 ]);
                 $result = $query->fields(['gallery_id'])
                                 ->group('gallery_id')
@@ -347,8 +372,7 @@ foreach ($connections as $db => $connection) {
                 $this->fixtures->populate('gallery');
 
                 $query = new Query([
-                    'model'      => $this->gallery,
-                    'connection' => $this->connection
+                    'model'      => $this->gallery
                 ]);
                 $entity = $query->order(['name' => 'ASC'])->first();
                 expect($entity->name)->toBe('Bar Gallery');
@@ -376,8 +400,7 @@ foreach ($connections as $db => $connection) {
                 $this->fixtures->populate('tag');
 
                 $query = new Query([
-                    'model'      => $this->tag,
-                    'connection' => $this->connection
+                    'model'      => $this->tag
                 ]);
 
                 $result = $query->order(['id'])->page(1)->limit(3)->all()->data();
@@ -396,6 +419,21 @@ foreach ($connections as $db => $connection) {
 
             });
 
+            it("populates the meta count value", function() {
+
+                $this->fixtures->populate('tag');
+
+                $query = new Query([
+                    'model'      => $this->tag
+                ]);
+
+                $result = $query->order(['id'])->page(1)->limit(3)->all();
+                expect($result->meta())->toEqual([
+                    'count' => 6
+                ]);
+
+            });
+
         });
 
         describe("->offset()", function() {
@@ -405,8 +443,7 @@ foreach ($connections as $db => $connection) {
                 $this->fixtures->populate('tag');
 
                 $query = new Query([
-                    'model'      => $this->tag,
-                    'connection' => $this->connection
+                    'model'      => $this->tag
                 ]);
 
                 $result = $query->order(['id'])->offset(0)->limit(3)->all()->data();
@@ -425,13 +462,32 @@ foreach ($connections as $db => $connection) {
 
             });
 
+            it("populates the meta count value", function() {
+
+                $this->fixtures->populate('tag');
+
+                $query = new Query([
+                    'model'      => $this->tag
+                ]);
+
+                $result = $query->order(['id'])->offset(3)->limit(3)->all();
+                expect($result->meta())->toEqual([
+                    'count' => 6
+                ]);
+
+            });
+
         });
 
         describe("->embed()", function() {
 
             it("gets/sets with relationship", function() {
 
-                $query = new Query(['connection' => $this->connection]);
+                $query = new Query([
+                    'schema' => new Schema([
+                        'connection' => $this->connection
+                    ])
+                ]);
                 $query->embed('relation1.relation2');
                 $query->embed('relation3', [
                     'conditions' => ['title' => 'hello world']
