@@ -67,98 +67,47 @@ class Schema extends \Chaos\Schema
     }
 
     /**
-     * Inserts and/or updates an entity and its direct relationship data in the datasource.
+     * Bulk inserts
      *
-     * @param object   $entity  The entity instance to save.
-     * @param array    $options Options:
-     *                          - `'whitelist'` _array_  : An array of fields that are allowed to be saved to this record.
-     *                          - `'locked'`    _boolean_: Lock data to the schema fields.
-     *                          - `'embed'`     _array_  : List of relations to save.
-     * @return boolean          Returns `true` on a successful save operation, `false` otherwise.
+     * @param  array   $inserts An array of entities to insert.
+     * @param  Closure $filter  The filter handler for which extract entities values for the insertion.
+     * @return boolean          Returns `true` if insert operations succeeded, `false` otherwise.
      */
-    public function save($entity, $options = [])
+    public function bulkInsert($inserts, $filter)
     {
-        $defaults = [
-            'whitelist' => null,
-            'locked' => $this->locked(),
-            'embed' => $entity->schema()->relations()
-        ];
-        $options += $defaults;
-
-        $options['validate'] = false;
-
-        if ($options['embed'] === true) {
-            $options['embed'] = $entity->hierarchy();
+        if (!$inserts) {
+            return true;
         }
-
-        $options['embed'] = $this->treeify($options['embed']);
-
-        if (!$this->_save($entity, 'belongsTo', $options)) {
-            return false;
-        }
-
-        $hasRelations = ['hasMany', 'hasOne'];
-
-        if ($entity->exists() && !$entity->modified()) {
-            return $this->_save($entity, $hasRelations, $options);
-        }
-
-        if (!$options['whitelist']) {
-            $fields = $options['locked'] ? $this->fields() : array_keys($entity->get());
-        } else if ($options['locked']) {
-            $fields = array_intersect($this->fields(), $options['whitelist']);
-        } else {
-            $fields = $options['whitelist'];
-        }
-
-        $exclude = array_fill_keys(array_diff($this->relations(false), $this->fields()), true);
-        $values = [];
-
-        foreach ($fields as $field) {
-            if (!isset($exclude[$field]) && $entity->has($field)) {
-                $values[$field] = $entity->get($field);
-            }
-        }
-
-        if ($entity->exists() === false) {
-            $success = $this->insert($values);
-        } else {
-            $id = $entity->id();
-            if ($id === null) {
-                throw new DatabaseException("Can't update an entity missing ID data.");
-            }
-            $success = $this->update($values, [$this->key() => $id]);
-        }
-
-        if ($entity->exists() === false) {
-            $id = $entity->id() === null ? $this->lastInsertId() : null;
+        $success = true;
+        foreach ($inserts as $entity) {
+            $this->insert($filter($entity));
+            $success = $success && $this->connection()->errorCode() === null;
+            $id = $entity->id() === null ? $this->lastInsertId() : $entity->id();
             $entity->sync($id, [], ['exists' => true]);
         }
-        return $success && $this->_save($entity, $hasRelations, $options);
+        return $success;
     }
 
     /**
-     * Save relations helper.
+     * Bulk updates
      *
-     * @param  object  $entity  The entity instance.
-     * @param  array   $types   Type of relations to save.
-     * @param  array   $options Options array.
-     * @return boolean          Returns `true` on a successful save operation, `false` on failure.
+     * @param  array   $updates An array of entities to update.
+     * @param  Closure $filter  The filter handler for which extract entities values to update.
+     * @return boolean          Returns `true` if update operations succeeded, `false` otherwise.
      */
-    protected function _save($entity, $types, $options = [])
+    public function bulkUpdate($updates, $filter)
     {
-        $defaults = ['embed' => []];
-        $options += $defaults;
-        $types = (array) $types;
-
+        if (!$updates) {
+            return true;
+        }
         $success = true;
-        foreach ($types as $type) {
-            foreach ($options['embed'] as $relName => $value) {
-                if (!($rel = $this->relation($relName)) || $rel->type() !== $type) {
-                    continue;
-                }
-                $success = $success && $rel->save($entity, ['embed' => $value] + $options);
+        foreach ($updates as $entity) {
+            $id = $entity->id();
+            if ($id === null) {
+                throw new DatabaseException("Can't update an existing entity with a missing ID.");
             }
+            $this->update($filter($entity), [$this->key() => $id]);
+            $success = $success && $this->connection()->errorCode() === null;
         }
         return $success;
     }

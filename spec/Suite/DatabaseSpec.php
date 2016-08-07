@@ -199,7 +199,7 @@ describe("Database", function() {
 
     });
 
-    describe("->errmsg()", function() {
+    describe("->errorMsg()", function() {
 
         it("retuns the last error", function() {
 
@@ -207,13 +207,13 @@ describe("Database", function() {
                 return ['0000', null, null];
             });
 
-            expect($this->database->errmsg())->toBe('');
+            expect($this->database->errorMsg())->toBe('');
 
             Stub::on($this->client)->method('errorInfo', function() {
                 return ['42S02', -204, "Error"];
             });
 
-            expect($this->database->errmsg())->toBe('42S02 (-204):Error');
+            expect($this->database->errorMsg())->toBe('42S02 (-204):Error');
 
         });
 

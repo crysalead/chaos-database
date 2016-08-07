@@ -272,13 +272,13 @@ foreach ($connections as $db => $connection) {
 
         });
 
-        describe("->save()", function() {
+        describe("->broadcast()", function() {
 
             it("saves empty entities", function() {
 
                 $model = $this->image;
                 $image = $model::create();
-                expect($image->save())->toBe(true);
+                expect($image->broadcast())->toBe(true);
                 expect($image->exists())->toBe(true);
 
             });
@@ -294,7 +294,7 @@ foreach ($connections as $db => $connection) {
                   'gallery_id' => 3
                 ]);
 
-                expect($image->save(['whitelist' => ['title']]))->toBe(true);
+                expect($image->broadcast(['whitelist' => ['title']]))->toBe(true);
                 expect($image->exists())->toBe(true);
 
                 $reloaded = $model::load($image->id());
@@ -316,7 +316,7 @@ foreach ($connections as $db => $connection) {
 
                 $model = $this->image;
                 $image = $model::create($data);
-                expect($image->save())->toBe(true);
+                expect($image->broadcast())->toBe(true);
                 expect($image->exists())->toBe(true);
                 expect($image->id())->not->toBe(null);
 
@@ -329,7 +329,7 @@ foreach ($connections as $db => $connection) {
                 ]);
 
                 $reloaded->title = 'Amiga 1260';
-                expect($reloaded->save())->toBe(true);
+                expect($reloaded->broadcast())->toBe(true);
                 expect($reloaded->exists())->toBe(true);
                 expect($reloaded->id())->toBe($image->id());
 
@@ -355,7 +355,7 @@ foreach ($connections as $db => $connection) {
 
                 $model = $this->gallery;
                 $gallery = $model::create($data);
-                expect($gallery->save())->toBe(true);
+                expect($gallery->broadcast())->toBe(true);
 
                 expect($gallery->id())->not->toBe(null);
                 foreach ($gallery->images as $image) {
@@ -379,7 +379,7 @@ foreach ($connections as $db => $connection) {
 
                 $model = $this->image;
                 $image = $model::create($data);
-                expect($image->save())->toBe(true);
+                expect($image->broadcast())->toBe(true);
 
                 expect($image->id())->not->toBe(null);
                 expect($image->gallery_id)->toBe($image->gallery->id());
@@ -401,7 +401,7 @@ foreach ($connections as $db => $connection) {
                 $model = $this->gallery;
                 $gallery = $model::create($data);
 
-                expect($gallery->save())->toBe(true);
+                expect($gallery->broadcast())->toBe(true);
 
                 expect($gallery->id())->not->toBe(null);
                 expect($gallery->detail->gallery_id)->toBe($gallery->id());
@@ -430,7 +430,7 @@ foreach ($connections as $db => $connection) {
 
                     $model = $this->image;
                     $this->entity = $model::create($data);
-                    $this->entity->save();
+                    $this->entity->broadcast();
 
                 });
 
@@ -460,7 +460,7 @@ foreach ($connections as $db => $connection) {
                     expect(count($reloaded->tags))->toBe(4);
 
                     unset($reloaded->tags[0]);
-                    expect($reloaded->save())->toBe(true);
+                    expect($reloaded->broadcast())->toBe(true);
 
                     $persisted = $model::find()->where(['id' => $reloaded->id()])->embed('tags')->first();
 
@@ -495,7 +495,7 @@ foreach ($connections as $db => $connection) {
 
                 $model = $this->gallery;
                 $gallery = $model::create($data);
-                expect($gallery->save(['embed' => 'images.tags']))->toBe(true);
+                expect($gallery->broadcast(['embed' => 'images.tags']))->toBe(true);
 
                 expect($gallery->id())->not->toBe(null);
                 expect($gallery->images)->toHaveLength(1);
@@ -523,7 +523,7 @@ foreach ($connections as $db => $connection) {
                     $model = $this->gallery;
                     $gallery = $model::create([], ['exists' => true]);
                     $gallery->name = 'Foo Gallery';
-                    $gallery->save();
+                    $gallery->broadcast();
                 };
 
                 expect($closure)->toThrow(new ChaosException("Existing entities must have a valid ID."));
@@ -536,16 +536,16 @@ foreach ($connections as $db => $connection) {
                     $model = $this->gallery;
                     $gallery = $model::create([], ['exists' => null, 'autoreload' => false]);
                     $gallery->name = 'Foo Gallery';
-                    $gallery->save();
+                    $gallery->broadcast();
                 };
 
-                expect($closure)->toThrow(new DatabaseException("Can't update an entity missing ID data."));
+                expect($closure)->toThrow(new ChaosException("Entites must have a valid `false`/`true` existing value to be either inserted or updated."));
 
             });
 
         });
 
-        describe("->persist()", function() {
+        describe("->save()", function() {
 
             it("saves an entity", function() {
 
@@ -557,12 +557,12 @@ foreach ($connections as $db => $connection) {
                 $model = $this->image;
                 $image = $model::create($data);
 
-                expect($image)->toReceive('save')->with([
+                expect($image)->toReceive('broadcast')->with([
                     'custom' => 'option',
                     'embed' => false
                 ]);
 
-                expect($image->persist(['custom' => 'option']))->toBe(true);
+                expect($image->save(['custom' => 'option']))->toBe(true);
                 expect($image->exists())->toBe(true);
                 expect($image->id())->not->toBe(null);
 
@@ -582,7 +582,7 @@ foreach ($connections as $db => $connection) {
                 $model = $this->image;
                 $image = $model::create($data);
 
-                expect($image->save())->toBe(true);
+                expect($image->broadcast())->toBe(true);
                 expect($image->exists())->toBe(true);
 
                 expect($image->delete())->toBe(true);

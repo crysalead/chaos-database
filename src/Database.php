@@ -409,11 +409,25 @@ class Database extends Source
     }
 
     /**
+     * Retrieves database error code.
+     *
+     * @return array
+     */
+    public function errorCode()
+    {
+        $code = $this->client()->errorCode();
+        if (!(int) $code) {
+            return null;
+        }
+        return $code;
+    }
+
+    /**
      * Retrieves database error message and error code.
      *
      * @return array
      */
-    public function errmsg()
+    public function errorMsg()
     {
         $err = $this->client()->errorInfo();
         if (!isset($err[0]) || !(int) $err[0]) {
