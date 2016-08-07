@@ -25,8 +25,8 @@ if (in_array('pgsql', $drivers)) {
     $box->factory('source.database.postgresql', function() {
         return new PostgreSql([
             'database' => 'chaos_test',
-            'username' => 'root',
-            'password' => 'root',
+            'username' => 'postgres',
+            'password' => 'postgres',
             'encoding' => 'utf8'
         ]);
     });

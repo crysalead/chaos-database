@@ -142,7 +142,7 @@ describe("Database", function() {
             expect($this->database->convert('datasource', 'serial', 123))->toBe('123');
             expect($this->database->convert('datasource', 'integer', 123))->toBe('123');
             expect($this->database->convert('datasource', 'float', 12.3))->toBe('12.3');
-            expect($this->database->convert('datasource', 'decimal', 12.3))->toBe('12.3');
+            expect($this->database->convert('datasource', 'decimal', 12.3))->toBe('12.30');
             $date = DateTime::createFromFormat('Y-m-d', '2014-11-21');
             expect($this->database->convert('datasource', 'date', $date))->toBe("'2014-11-21'");
             expect($this->database->convert('datasource', 'date', '2014-11-21'))->toBe("'2014-11-21'");

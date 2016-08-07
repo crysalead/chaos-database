@@ -126,7 +126,7 @@ class Database extends Source
         $this->formatter('datasource', 'serial',    $handlers['datasource']['string']);
         $this->formatter('datasource', 'integer',   $handlers['datasource']['string']);
         $this->formatter('datasource', 'float',     $handlers['datasource']['string']);
-        $this->formatter('datasource', 'decimal',   $handlers['datasource']['string']);
+        $this->formatter('datasource', 'decimal',   $handlers['datasource']['decimal']);
         $this->formatter('datasource', 'date',      $handlers['datasource']['date']);
         $this->formatter('datasource', 'datetime',  $handlers['datasource']['datetime']);
         $this->formatter('datasource', 'boolean',   $handlers['datasource']['boolean']);
@@ -319,8 +319,15 @@ class Database extends Source
                 }
             ],
             'datasource' => [
+                'object'   => function($value, $options = []) {
+                    return $value->to('datasource', $options);
+                },
                 'string' => function($value, $options = []) {
                     return (string) $value;
+                },
+                'decimal' => function($value, $options = []) {
+                    $options += ['precision' => 2, 'decimal' => '.', 'separator' => ''];
+                    return number_format($value, $options['precision'], $options['decimal'], $options['separator']);
                 },
                 'quote' => function($value, $options = []) {
                     return $this->dialect()->quote((string) $value);

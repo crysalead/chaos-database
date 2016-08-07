@@ -1,6 +1,7 @@
 <?php
 namespace Chaos\Database\Spec\Suite\Adapter;
 
+use DateTime;
 use Chaos\Database\DatabaseException;
 use Chaos\Database\Adapter\PostgreSql;
 use Chaos\Database\Schema;
@@ -248,6 +249,62 @@ describe("PostgreSql", function() {
 
     });
 
+    describe("->save()", function() {
+
+        it("casts data on insert using datasource handlers", function() {
+
+            $schema = new Schema(['source' => 'test']);
+            $schema->connection($this->adapter);
+
+            $schema->column('id',         ['type' => 'serial']);
+            $schema->column('name',       ['type' => 'string']);
+            $schema->column('null',       ['type' => 'string']);
+            $schema->column('value',      ['type' => 'integer']);
+            $schema->column('double',     ['type' => 'float']);
+            $schema->column('revenue',    [
+              'type' => 'decimal',
+              'length' => 20,
+              'precision' => 2
+            ]);
+            $schema->column('active',     ['type' => 'boolean']);
+            $schema->column('registered', ['type' => 'date']);
+            $schema->column('created',    ['type' => 'datetime']);
+
+            $schema->create();
+
+            $schema->insert([
+              'id' => 1,
+              'name' => 'test',
+              'null' => null,
+              'value' => 1234,
+              'double' => 1.5864,
+              'revenue' => '152000.8589',
+              'active' => true,
+              'registered' => DateTime::createFromFormat('Y-m-d H:i:s', '2016-07-30 00:00:00'),
+              'created' => DateTime::createFromFormat('Y-m-d H:i:s', '2016-07-30 04:38:55')
+            ]);
+
+            $cursor = $schema->connection()->query('SELECT * FROM test WHERE id = 1');
+            $data = $cursor->next();
+
+            expect($data)->toBe([
+              'id' => 1,
+              'name' => 'test',
+              'null' => null,
+              'value' => 1234,
+              'double' => '1.5864',
+              'revenue' => '152000.86',
+              'active' => true,
+              'registered' => '2016-07-30',
+              'created' => '2016-07-30 04:38:55'
+            ]);
+
+            $cursor->close();
+            $schema->drop();
+        });
+
+    });
+
     describe("->lastInsertId()", function() {
 
         it("gets the encoding last insert ID", function() {
@@ -286,9 +343,8 @@ describe("PostgreSql", function() {
         it("throws an exception when an error occured", function() {
 
             $closure = function() {
-                $this->adapter->query('SELECT');
+                $this->adapter->query('SELECT *');
             };
-
             expect($closure)->toThrow('~error~');
 
         });

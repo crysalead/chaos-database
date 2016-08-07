@@ -1,6 +1,7 @@
 <?php
 namespace Chaos\Database\Spec\Suite;
 
+use DateTime;
 use Lead\Set\Set;
 use Chaos\ChaosException;
 use Chaos\Database\DatabaseException;
@@ -272,6 +273,39 @@ foreach ($connections as $db => $connection) {
         });
 
         describe("->save()", function() {
+
+            it("saves empty entities", function() {
+
+                $model = $this->image;
+                $image = $model::create();
+                expect($image->save())->toBe(true);
+                expect($image->exists())->toBe(true);
+
+            });
+
+            it("uses whitelist with locked schema", function() {
+
+                $model = $this->image;
+                $image = $model::create();
+
+                $image->set([
+                  'name' => 'image',
+                  'title' => 'Image',
+                  'gallery_id' => 3
+                ]);
+
+                expect($image->save(['whitelist' => ['title']]))->toBe(true);
+                expect($image->exists())->toBe(true);
+
+                $reloaded = $model::load($image->id());
+                expect($reloaded->data())->toEqual([
+                  'id' => $image->id(),
+                  'name' => null,
+                  'title' => 'Image',
+                  'gallery_id' => null
+                ]);
+
+            });
 
             it("saves and updates an entity", function() {
 

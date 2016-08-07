@@ -103,12 +103,22 @@ class Schema extends \Chaos\Schema
             return $this->_save($entity, $hasRelations, $options);
         }
 
-        if (($whitelist = $options['whitelist']) || $options['locked']) {
-            $whitelist = $whitelist ?: $this->fields();
+        if (!$options['whitelist']) {
+            $fields = $options['locked'] ? $this->fields() : array_keys($entity->get());
+        } else if ($options['locked']) {
+            $fields = array_intersect($this->fields(), $options['whitelist']);
+        } else {
+            $fields = $options['whitelist'];
         }
 
-        $exclude = array_diff($this->relations(false), $this->fields());
-        $values = array_diff_key($entity->get(), array_fill_keys($exclude, true));
+        $exclude = array_fill_keys(array_diff($this->relations(false), $this->fields()), true);
+        $values = [];
+
+        foreach ($fields as $field) {
+            if (!isset($exclude[$field]) && $entity->has($field)) {
+                $values[$field] = $entity->get($field);
+            }
+        }
 
         if ($entity->exists() === false) {
             $success = $this->insert($values);
