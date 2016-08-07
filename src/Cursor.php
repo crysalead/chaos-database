@@ -270,6 +270,9 @@ class Cursor implements \Iterator
      */
     public function close()
     {
+        if ($this->_resource) {
+            $this->_resource->closeCursor();
+        }
         unset($this->_resource);
         $this->_resource = null;
         $this->_data = [];

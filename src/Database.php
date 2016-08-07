@@ -386,7 +386,6 @@ class Database extends Source
     {
         $defaults = ['exception' => true];
         $options += $defaults;
-        $statement = null;
 
         try {
             $statement = $this->client()->prepare($sql);
