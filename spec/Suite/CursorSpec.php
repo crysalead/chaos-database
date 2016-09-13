@@ -4,7 +4,7 @@ namespace Chaos\Database\Spec\Suite;
 use PDOException;
 use Chaos\Database\Cursor;
 
-use Kahlan\Plugin\Stub;
+use Kahlan\Plugin\Double;
 
 describe("Cursor", function() {
 
@@ -94,8 +94,8 @@ describe("Cursor", function() {
 
         it("returns `false` when the `PDOStatement` returns `false`", function() {
 
-            $resource = Stub::create();
-            Stub::on($resource)->method('fetch', function() {
+            $resource = Double::instance();
+            allow($resource)->toReceive('fetch')->andRun(function() {
                 return false;
             });
 
@@ -106,8 +106,8 @@ describe("Cursor", function() {
 
         it("returns `false` when the `PDOStatement` throws an exception", function() {
 
-            $resource = Stub::create();
-            Stub::on($resource)->method('fetch', function() {
+            $resource = Double::instance();
+            allow($resource)->toReceive('fetch')->andRun(function() {
                 throw new PDOException();
             });
 
@@ -118,8 +118,8 @@ describe("Cursor", function() {
 
         it("sets the resource extracted data on success", function() {
 
-            $resource = Stub::create();
-            Stub::on($resource)->method('fetch', function() {
+            $resource = Double::instance();
+            allow($resource)->toReceive('fetch')->andRun(function() {
                 return 'data';
             });
 

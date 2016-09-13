@@ -6,8 +6,8 @@ use Chaos\Database\Adapter\Sqlite;
 
 date_default_timezone_set('UTC');
 
-$args = $this->args();
-$args->argument('coverage', 'default', 3);
+$commandLine = $this->commandLine();
+$commandLine->option('coverage', 'default', 3);
 
 $box = box('chaos.spec', new Box());
 

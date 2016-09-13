@@ -9,8 +9,6 @@ use Chaos\Finders;
 use Chaos\Database\Query;
 use Chaos\Database\Schema;
 
-use Kahlan\Plugin\Stub;
-
 use Chaos\Database\Spec\Fixture\Fixtures;
 
 $box = box('chaos.spec');
@@ -24,7 +22,7 @@ foreach ($connections as $db => $connection) {
 
     describe("Query[{$db}]", function() use ($connection) {
 
-        before(function() use ($connection) {
+        beforeAll(function() use ($connection) {
             skipIf(!$connection);
         });
 

@@ -15,7 +15,7 @@ if (in_array('mysql', $drivers)) {
         return new MySql([
             'database' => 'chaos_test',
             'username' => 'root',
-            'password' => '',
+            'password' => 'root',
             'encoding' => 'utf8'
         ]);
     });
@@ -26,7 +26,7 @@ if (in_array('pgsql', $drivers)) {
         return new PostgreSql([
             'database' => 'chaos_test',
             'username' => 'postgres',
-            'password' => '',
+            'password' => 'postgres',
             'encoding' => 'utf8'
         ]);
     });

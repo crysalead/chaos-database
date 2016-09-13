@@ -4,21 +4,20 @@ namespace Chaos\Database\Spec\Suite;
 use DateTime;
 use Chaos\Database\DatabaseException;
 
-use Kahlan\Plugin\Stub;
-use Kahlan\Plugin\Monkey;
+use Kahlan\Plugin\Double;
 
 describe("Database", function() {
 
     beforeEach(function() {
 
-        $this->client = Stub::create();
-        Stub::on($this->client)->method('quote', function($string) {
+        $this->client = Double::instance();
+        allow($this->client)->toReceive('quote')->andRun(function($string) {
             return "'{$string}'";
         });
 
-        $this->database = Stub::create([
+        $this->database = Double::instance([
             'extends' => 'Chaos\Database\Database',
-            'params'  => [[
+            'args'    => [[
                 'client' => $this->client
             ]],
             'methods' => ['exception']
@@ -70,7 +69,7 @@ describe("Database", function() {
         it("throws an exception if no DSN is set", function() {
 
             $closure = function() {
-                Stub::create(['extends' => 'Chaos\Database\Database']);
+                Double::instance(['extends' => 'Chaos\Database\Database']);
             };
             expect($closure)->toThrow(new DatabaseException('Error, no DSN setup has been configured for database connection.'));
 
@@ -80,15 +79,15 @@ describe("Database", function() {
         it("throws an exception when PDO throws an exception on connect", function() {
 
             $closure = function() {
-                Stub::create([
+                Double::instance([
                     'extends' => 'Chaos\Database\Database',
-                    'params'  => [[
+                    'args'    => [[
                         'dsn' => 'mysql:host=localhost;port=3306;dbname=test'
                     ]]
                 ]);
             };
 
-            Monkey::patch('PDO', 'Chaos\Database\Spec\Mock\PDO');
+            allow('PDO')->toBe('Chaos\Database\Spec\Mock\PDO');
 
             expect($closure)->toThrow(new DatabaseException("Error, PDO mock class used can't connect."));
 
@@ -99,7 +98,7 @@ describe("Database", function() {
     describe("->_exception()", function() {
 
         beforeEach(function() {
-            Stub::on($this->database)->method('exception', function($e) {
+            allow($this->database)->toReceive('exception')->andRun(function($e) {
                 return $this->_exception($e);
             });
         });
@@ -107,11 +106,11 @@ describe("Database", function() {
         it("throws an exception when PDO can't connect to the database", function() {
 
             $closure = function() {
-                $e = Stub::create();
-                Stub::on($e)->method('getCode', function() {
+                $e = Double::instance();
+                allow($e)->toReceive('getCode')->andRun(function() {
                     return '28000';
                 });
-                Stub::on($e)->method('getMessage', function() {
+                allow($e)->toReceive('getMessage')->andRun(function() {
                     return 'Host connected, but could not access database.';
                 });
                 $this->database->exception($e);
@@ -203,13 +202,13 @@ describe("Database", function() {
 
         it("retuns the last error", function() {
 
-            Stub::on($this->client)->method('errorInfo', function() {
+            allow($this->client)->toReceive('errorInfo')->andRun(function() {
                 return ['0000', null, null];
             });
 
             expect($this->database->errorMsg())->toBe('');
 
-            Stub::on($this->client)->method('errorInfo', function() {
+            allow($this->client)->toReceive('errorInfo')->andRun(function() {
                 return ['42S02', -204, "Error"];
             });
 

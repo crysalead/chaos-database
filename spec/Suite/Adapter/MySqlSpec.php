@@ -6,12 +6,9 @@ use Chaos\Database\DatabaseException;
 use Chaos\Database\Adapter\MySql;
 use Chaos\Database\Schema;
 
-use Kahlan\Plugin\Stub;
-use Kahlan\Plugin\Monkey;
-
 describe("MySql", function() {
 
-    before(function() {
+    beforeAll(function() {
         $box = box('chaos.spec');
         skipIf(!$box->has('source.database.mysql'));
     });
@@ -40,7 +37,7 @@ describe("MySql", function() {
 
         it("throws an exception if the extension is not loaded.", function() {
 
-            Monkey::patch('extension_loaded', function() { return false; });
+            allow('extension_loaded')->toBeCalled()->andReturn(false);
             expect(function() { MySql::enabled(); })->toThrow(new DatabaseException("The PDO MySQL extension is not installed."));
 
         });
