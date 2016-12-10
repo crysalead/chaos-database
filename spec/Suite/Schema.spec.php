@@ -11,6 +11,8 @@ use Chaos\Database\Schema;
 
 use Chaos\Database\Spec\Fixture\Fixtures;
 
+use Kahlan\Plugin\Double;
+
 $box = box('chaos.spec');
 
 $connections = [
@@ -59,6 +61,37 @@ foreach ($connections as $db => $connection) {
         afterEach(function() {
             $this->fixtures->drop();
             $this->fixtures->reset();
+        });
+
+        describe("->__construct()", function() {
+
+            it("correctly sets config options", function() {
+
+                $connection = Double::instance();
+                allow($connection)->toReceive('formatters')->andReturn([]);
+
+                $schema = new Schema([
+                    'connection'  => $connection
+                ]);
+
+                expect($schema->connection())->toBe($connection);
+            });
+
+        });
+
+        describe("->connection()", function() {
+
+            it("gets/sets the connection", function() {
+
+                $connection = Double::instance();
+                allow($connection)->toReceive('formatters')->andReturn([]);
+                $schema = new Schema();
+
+                expect($schema->connection($connection))->toBe($schema);
+                expect($schema->connection())->toBe($connection);
+
+            });
+
         });
 
         describe("->create()/->drop()", function() {
@@ -317,6 +350,7 @@ foreach ($connections as $db => $connection) {
                 expect($image->broadcast())->toBe(true);
                 expect($image->exists())->toBe(true);
                 expect($image->id())->not->toBe(null);
+                expect($image->modified())->toBe(false);
 
                 $reloaded = $model::load($image->id());
                 expect($reloaded->data())->toEqual([
@@ -330,6 +364,7 @@ foreach ($connections as $db => $connection) {
                 expect($reloaded->broadcast())->toBe(true);
                 expect($reloaded->exists())->toBe(true);
                 expect($reloaded->id())->toBe($image->id());
+                expect($reloaded->modified())->toBe(false);
 
                 $persisted = $model::load($reloaded->id());
                 expect($persisted->data())->toEqual([

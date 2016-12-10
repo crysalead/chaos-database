@@ -53,7 +53,7 @@ foreach ($connections as $db => $connection) {
             $this->tag = $this->fixtures->get('tag')->model();
 
             $this->query = new Query([
-                'model'      => $this->gallery
+                'model' => $this->gallery
             ]);
 
         });

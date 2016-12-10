@@ -1,6 +1,7 @@
 <?php
 namespace Chaos\Database;
 
+use Lead\Set\Set;
 use Chaos\Database\DatabaseException;
 
 class Schema extends \Chaos\Schema
@@ -20,6 +21,54 @@ class Schema extends \Chaos\Schema
     ];
 
     /**
+     * The connection instance.
+     *
+     * @var object
+     */
+    protected $_connection = null;
+
+
+    /**
+     * Configures the meta for use.
+     *
+     * @param array $config Possible options are:
+     *                      - `'connection'`  _object_ : The connection instance (defaults to `null`).
+     */
+    public function __construct($config = [])
+    {
+        $defaults = [
+            'connection' => null
+        ];
+
+        $config = Set::merge($defaults, $config);
+        parent::__construct($config);
+
+        $this->connection($config['connection']);
+
+    }
+
+    /**
+     * Gets/sets the connection object to which this schema is bound.
+     *
+     * @return object    Returns a connection instance.
+     * @throws Exception Throws a `ChaosException` if a connection isn't set.
+     */
+    public function connection($connection = null)
+    {
+        if (func_num_args()) {
+            $this->_connection = $connection;
+            if ($this->_connection) {
+                $this->_formatters = Set::merge($this->_formatters, $this->_connection->formatters());
+            }
+            return $this;
+        }
+        if (!$this->_connection) {
+            throw new ChaosException("Error, missing connection for this schema.");
+        }
+        return $this->_connection;
+    }
+
+    /**
      * Returns a query to retrieve data from the connected data source.
      *
      * @param  array  $options Query options.
@@ -29,7 +78,7 @@ class Schema extends \Chaos\Schema
     {
         $options += [
             'connection' => $this->connection(),
-            'model' => $this->model()
+            'model'  => $this->reference()
         ];
         $query = $this->_classes['query'];
         if (!$options['model']) {
@@ -108,6 +157,7 @@ class Schema extends \Chaos\Schema
             }
             $this->update($filter($entity), [$this->key() => $id]);
             $success = $success && $this->connection()->errorCode() === null;
+            $entity->sync();
         }
         return $success;
     }
