@@ -6,7 +6,7 @@
     "require": {
         "php": ">=5.5",
         "crysalead/set": "~2.0",
-        "crysalead/chaos": "dev-master",
+        "crysalead/chaos-orm": "dev-master",
         "crysalead/sql": "dev-master"
     },
     "require-dev": {
