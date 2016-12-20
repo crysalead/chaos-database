@@ -78,7 +78,7 @@ class Schema extends \Chaos\Schema
     {
         $options += [
             'connection' => $this->connection(),
-            'model'      => $this->document()
+            'model'  => $this->reference()
         ];
         $query = $this->_classes['query'];
         if (!$options['model']) {
