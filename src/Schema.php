@@ -2,9 +2,8 @@
 namespace Chaos\Database;
 
 use Lead\Set\Set;
-use Chaos\Database\DatabaseException;
 
-class Schema extends \Chaos\Schema
+class Schema extends \Chaos\ORM\Schema
 {
     /**
      * Class dependencies.
@@ -12,11 +11,11 @@ class Schema extends \Chaos\Schema
      * @var array
      */
     protected $_classes = [
-        'relationship'   => 'Chaos\Relationship',
-        'belongsTo'      => 'Chaos\Relationship\BelongsTo',
-        'hasOne'         => 'Chaos\Relationship\HasOne',
-        'hasMany'        => 'Chaos\Relationship\HasMany',
-        'hasManyThrough' => 'Chaos\Relationship\HasManyThrough',
+        'relationship'   => 'Chaos\ORM\Relationship',
+        'belongsTo'      => 'Chaos\ORM\Relationship\BelongsTo',
+        'hasOne'         => 'Chaos\ORM\Relationship\HasOne',
+        'hasMany'        => 'Chaos\ORM\Relationship\HasMany',
+        'hasManyThrough' => 'Chaos\ORM\Relationship\HasManyThrough',
         'query'          => 'Chaos\Database\Query'
     ];
 
@@ -51,7 +50,7 @@ class Schema extends \Chaos\Schema
      * Gets/sets the connection object to which this schema is bound.
      *
      * @return object    Returns a connection instance.
-     * @throws Exception Throws a `ChaosException` if a connection isn't set.
+     * @throws Exception Throws a `DatabaseException` if a connection isn't set.
      */
     public function connection($connection = null)
     {
@@ -63,7 +62,7 @@ class Schema extends \Chaos\Schema
             return $this;
         }
         if (!$this->_connection) {
-            throw new ChaosException("Error, missing connection for this schema.");
+            throw new DatabaseException("Error, missing connection for this schema.");
         }
         return $this->_connection;
     }

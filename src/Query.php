@@ -2,6 +2,7 @@
 namespace Chaos\Database;
 
 use PDO;
+use ArrayIterator;
 use IteratorAggregate;
 use Lead\Set\Set;
 use Chaos\Database\DatabaseException;
@@ -17,7 +18,7 @@ class Query implements IteratorAggregate
      * @var array
      */
     protected $_classes = [
-        'collector' => 'Chaos\Collector'
+        'collector' => 'Chaos\ORM\Collector'
     ];
 
     /**
@@ -189,7 +190,8 @@ class Query implements IteratorAggregate
      */
     public function getIterator()
     {
-        return $this->get();
+        $data = $this->get();
+        return is_array($data) ? new ArrayIterator($data) : $data;
     }
 
     /**

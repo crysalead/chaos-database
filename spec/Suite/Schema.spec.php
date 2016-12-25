@@ -3,9 +3,9 @@ namespace Chaos\Database\Spec\Suite;
 
 use DateTime;
 use Lead\Set\Set;
-use Chaos\ChaosException;
+use Chaos\ORM\ORMException;
 use Chaos\Database\DatabaseException;
-use Chaos\Model;
+use Chaos\ORM\Model;
 use Chaos\Database\Query;
 use Chaos\Database\Schema;
 
@@ -559,7 +559,7 @@ foreach ($connections as $db => $connection) {
                     $gallery->broadcast();
                 };
 
-                expect($closure)->toThrow(new ChaosException("Existing entities must have a valid ID."));
+                expect($closure)->toThrow(new ORMException("Existing entities must have a valid ID."));
 
             });
 
@@ -572,7 +572,7 @@ foreach ($connections as $db => $connection) {
                     $gallery->broadcast();
                 };
 
-                expect($closure)->toThrow(new ChaosException("Entites must have a valid `false`/`true` existing value to be either inserted or updated."));
+                expect($closure)->toThrow(new ORMException("Entites must have a valid `false`/`true` existing value to be either inserted or updated."));
 
             });
 

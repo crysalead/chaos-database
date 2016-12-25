@@ -2,10 +2,10 @@
 namespace Chaos\Database\Spec\Suite;
 
 use Lead\Set\Set;
-use Chaos\ChaosException;
+use Chaos\ORM\ORMException;
 use Chaos\Database\DatabaseException;
-use Chaos\Model;
-use Chaos\Finders;
+use Chaos\ORM\Model;
+use Chaos\ORM\Finders;
 use Chaos\Database\Query;
 use Chaos\Database\Schema;
 
@@ -281,7 +281,7 @@ foreach ($connections as $db => $connection) {
                     $query->fooGallery();
                 };
 
-                expect($closure)->toThrow(new ChaosException("Unexisting finder `'fooGallery'`."));
+                expect($closure)->toThrow(new ORMException("Unexisting finder `'fooGallery'`."));
 
             });
 
