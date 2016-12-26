@@ -1,6 +1,7 @@
 <?php
 namespace Chaos\Database;
 
+use InvalidArgumentException;
 use PDO;
 use PDOException;
 use PDOStatement;
@@ -284,40 +285,6 @@ class Database extends Source
     protected function _handlers()
     {
         return [
-            'cast' => [
-                'string' => function($value, $options = []) {
-                    return (string) $value;
-                },
-                'integer' => function($value, $options = []) {
-                    return (integer) $value;
-                },
-                'float'   => function($value, $options = []) {
-                    return (float) $value;
-                },
-                'decimal' => function($value, $options = []) {
-                    $options += ['precision' => 2, 'decimal' => '.', 'separator' => ''];
-                    return number_format($value, $options['precision'], $options['decimal'], $options['separator']);
-                },
-                'boolean' => function($value, $options = []) {
-                    return !!$value;
-                },
-                'date'    => function($value, $options = []) {
-                    return $this->convert('cast', 'datetime', $value, ['format' => 'Y-m-d'])->setTime(0, 0, 0);
-                },
-                'datetime'    => function($value, $options = []) {
-                    $options += ['format' => 'Y-m-d H:i:s'];
-                    if (is_numeric($value)) {
-                        return new DateTime('@' . $value);
-                    }
-                    if ($value instanceof DateTime) {
-                        return $value;
-                    }
-                    return DateTime::createFromFormat($options['format'], date($options['format'], strtotime($value)));
-                },
-                'null'    => function($value, $options = []) {
-                    return null;
-                }
-            ],
             'datasource' => [
                 'object'   => function($value, $options = []) {
                     return $value->to('datasource', $options);
@@ -340,7 +307,11 @@ class Database extends Source
                     if ($value instanceof DateTime) {
                         $date = $value->format($options['format']);
                     } else {
-                        $date = date($options['format'], is_numeric($value) ? $value : strtotime($value));
+                        $timestamp = is_numeric($value) ? $value : strtotime($value);
+                        if ($timestamp < 0 || $timestamp === false) {
+                            throw new InvalidArgumentException("Invalid date `{$value}`, can't be parsed.");
+                        }
+                        $date = date($options['format'], $timestamp);
                     }
                     return $this->dialect()->quote((string) $date);
                 },
@@ -351,7 +322,7 @@ class Database extends Source
                     return 'NULL';
                 }
             ]
-        ];
+        ] + parent::_handlers();
     }
 
     /**
@@ -364,7 +335,6 @@ class Database extends Source
      */
     public function convert($mode, $type, $value, $options = [])
     {
-        $type = ($mode === 'datasource' && $value === null) ? 'null' : $type;
         if (is_array($value)) {
             $key = key($value);
             $dialect = $this->dialect();

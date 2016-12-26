@@ -1,6 +1,7 @@
 <?php
 namespace Chaos\Database\Spec\Suite;
 
+use InvalidArgumentException;
 use DateTime;
 use Chaos\Database\DatabaseException;
 
@@ -157,6 +158,47 @@ describe("Database", function() {
 
         });
 
+        it("formats `null` values on export", function() {
+
+            expect($this->database->convert('datasource', 'id', null))->toBe('NULL');
+            expect($this->database->convert('datasource', 'serial', null))->toBe('NULL');
+            expect($this->database->convert('datasource', 'integer', null))->toBe('NULL');
+            expect($this->database->convert('datasource', 'float', null))->toBe('NULL');
+            expect($this->database->convert('datasource', 'decimal', null))->toBe('NULL');
+            expect($this->database->convert('datasource', 'date', null))->toBe('NULL');
+            expect($this->database->convert('datasource', 'datetime', null))->toBe('NULL');
+            expect($this->database->convert('datasource', 'boolean', null))->toBe('NULL');
+            expect($this->database->convert('datasource', 'null', null))->toBe('NULL');
+            expect($this->database->convert('datasource', 'string', null))->toBe('NULL');
+            expect($this->database->convert('datasource', '_default_',null))->toBe('NULL');
+            expect($this->database->convert('datasource', '_undefined_', null))->toBe('NULL');
+
+        });
+
+        it("throws an exception when exporting an invalid date", function() {
+
+            $closure = function() {
+                $this->database->convert('datasource', 'date', '0000-00-00');
+            };
+            expect($closure)->toThrow(new InvalidArgumentException("Invalid date `0000-00-00`, can't be parsed."));
+
+            $closure = function() {
+                $this->database->convert('datasource', 'date', '2016-25-15');
+            };
+            expect($closure)->toThrow(new InvalidArgumentException("Invalid date `2016-25-15`, can't be parsed."));
+
+            $closure = function() {
+                $this->database->convert('datasource', 'datetime', '2016-12-15 80:90:00');
+            };
+            expect($closure)->toThrow(new InvalidArgumentException("Invalid date `2016-12-15 80:90:00`, can't be parsed."));
+
+            $closure = function() {
+                $this->database->convert('datasource', 'datetime', '0000-00-00 00:00:00');
+            };
+            expect($closure)->toThrow(new InvalidArgumentException("Invalid date `0000-00-00 00:00:00`, can't be parsed."));
+
+        });
+
         it("formats according default `'cast'` handlers", function() {
 
             expect($this->database->convert('cast', 'id', '123'))->toBe(123);
@@ -176,23 +218,6 @@ describe("Database", function() {
             expect($this->database->convert('cast', 'string', 'abc'))->toBe('abc');
             expect($this->database->convert('cast', '_default_', 123))->toBe(123);
             expect($this->database->convert('cast', '_undefined_', 123))->toBe(123);
-
-        });
-
-        it("formats `null` values", function() {
-
-            expect($this->database->convert('datasource', 'id', null))->toBe('NULL');
-            expect($this->database->convert('datasource', 'serial', null))->toBe('NULL');
-            expect($this->database->convert('datasource', 'integer', null))->toBe('NULL');
-            expect($this->database->convert('datasource', 'float', null))->toBe('NULL');
-            expect($this->database->convert('datasource', 'decimal', null))->toBe('NULL');
-            expect($this->database->convert('datasource', 'date', null))->toBe('NULL');
-            expect($this->database->convert('datasource', 'datetime', null))->toBe('NULL');
-            expect($this->database->convert('datasource', 'boolean', null))->toBe('NULL');
-            expect($this->database->convert('datasource', 'null', null))->toBe('NULL');
-            expect($this->database->convert('datasource', 'string', null))->toBe('NULL');
-            expect($this->database->convert('datasource', '_default_',null))->toBe('NULL');
-            expect($this->database->convert('datasource', '_undefined_', null))->toBe('NULL');
 
         });
 
