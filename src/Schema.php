@@ -104,7 +104,7 @@ class Schema extends \Chaos\ORM\Schema
             throw new DatabaseException("Missing table name for this schema.");
         }
 
-        $query = $this->connection()->dialect()->statement('create table');
+        $query = $this->connection()->dialect()->statement('create table', ['schema' => $this]);
         $query->ifNotExists($options['soft'])
               ->table($this->_source)
               ->columns($this->columns())

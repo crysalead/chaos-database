@@ -110,9 +110,8 @@ class Database extends Source
                 'caster' => function($value, $states = []) {
                     if (!empty($states['schema'])) {
                         $type = $states['schema']->type($states['name']);
-                    } else {
-                        $type = gettype($value);
                     }
+                    $type = !empty($type) ? $type : gettype($value);
                     return $this->convert('datasource', $type, $value);
                 }
             ]);

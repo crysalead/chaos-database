@@ -224,7 +224,7 @@ class Query implements IteratorAggregate
 
         $schema = $this->schema();
 
-        $cursor = $schema->connection()->query($this->statement()->toString(), [], [
+        $cursor = $schema->connection()->query($this->statement()->toString($this->_schemas), [], [
             'fetch' => $return === 'object' ? PDO::FETCH_OBJ : $options['fetch']
         ]);
 
@@ -645,7 +645,7 @@ class Query implements IteratorAggregate
         if ($noFields = !$this->statement()->data('fields')) {
             $this->statement()->fields([$this->alias() => ['*']]);
         }
-        $sql = $this->statement()->toString();
+        $sql = $this->statement()->toString($this->_schemas);
         $this->_statement = $save;
         return $sql;
     }
