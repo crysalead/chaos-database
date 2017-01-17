@@ -629,4 +629,24 @@ class Query implements IteratorAggregate
         list($fromField, $toField) = each($keys);
         return ['=' => [[':name' =>"{$fromAlias}.{$fromField}"], [':name' => "{$toAlias}.{$toField}"]]];
     }
+
+    /**
+     * Return the SQL string.
+     *
+     * @return string
+     */
+    public function toString()
+    {
+        $save = $this->_statement;
+        $this->_statement = clone $save;
+        $this->_applyHas();
+        $this->_applyLimit();
+
+        if ($noFields = !$this->statement()->data('fields')) {
+            $this->statement()->fields([$this->alias() => ['*']]);
+        }
+        $sql = $this->statement()->toString();
+        $this->_statement = $save;
+        return $sql;
+    }
 }
