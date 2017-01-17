@@ -108,9 +108,10 @@ class Database extends Source
                     return $this->quote($string);
                 },
                 'caster' => function($value, $states = []) {
-                    $type = isset($states['type']) ? $states['type'] : gettype($value);
-                    if (is_array($type)) {
-                        $type = call_user_func($type, $states['name']);
+                    if (!empty($states['schema'])) {
+                        $type = $states['schema']->type($states['name']);
+                    } else {
+                        $type = gettype($value);
                     }
                     return $this->convert('datasource', $type, $value);
                 }

@@ -177,9 +177,9 @@ class Schema extends \Chaos\ORM\Schema
             $connection = $this->connection();
             $data[$key] = $connection::enabled('default') ? [':plain' => 'default'] : null;
         }
-        $insert = $this->connection()->dialect()->statement('insert');
+        $insert = $this->connection()->dialect()->statement('insert', ['schema' => $this]);
         $insert->into($this->source())
-               ->values($data, [$this, 'type']);
+               ->values($data);
 
         return $this->connection()->query($insert->toString());
     }
@@ -197,10 +197,10 @@ class Schema extends \Chaos\ORM\Schema
      */
     public function update($data, $conditions = [], $options = [])
     {
-        $update = $this->connection()->dialect()->statement('update');
+        $update = $this->connection()->dialect()->statement('update', ['schema' => $this]);
         $update->table($this->source())
                ->where($conditions)
-               ->values($data, [$this, 'type']);
+               ->values($data);
 
         return $this->connection()->query($update->toString());
     }
