@@ -47,7 +47,7 @@ class Sqlite extends \Chaos\Database\Database
         $defaults = [
             'database' => ':memory:',
             'classes' => [
-                'dialect' => 'Lead\Sql\Dialect\Sqlite'
+                'dialect' => 'Lead\Sql\Dialect\Dialect\Sqlite'
             ],
             'handlers' => [],
         ];

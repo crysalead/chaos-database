@@ -7,7 +7,7 @@
         "php": ">=5.5",
         "crysalead/set": "~2.0",
         "crysalead/chaos-orm": "dev-master",
-        "crysalead/sql": "dev-master"
+        "crysalead/sql-dialect": "dev-master"
     },
     "require-dev": {
         "kahlan/kahlan": "~3.0"

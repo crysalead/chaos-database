@@ -76,7 +76,7 @@ class Database extends Source
             'classes' => [
                 'cursor'  => 'Chaos\Database\Cursor',
                 'schema'  => 'Chaos\Database\Schema',
-                'dialect' => 'Lead\Sql\Dialect'
+                'dialect' => 'Lead\Sql\Dialect\Dialect'
             ],
             'meta'       => ['key' => 'id', 'locked' => true],
             'client'     => null,

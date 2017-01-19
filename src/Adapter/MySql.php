@@ -51,7 +51,7 @@ class MySql extends \Chaos\Database\Database
         $defaults = [
             'host' => 'localhost:3306',
             'classes' => [
-                'dialect' => 'Lead\Sql\Dialect\MySql'
+                'dialect' => 'Lead\Sql\Dialect\Dialect\MySql'
             ],
             'handlers' => [],
         ];

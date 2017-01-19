@@ -61,7 +61,7 @@ class PostgreSql extends \Chaos\Database\Database
             'schema' => 'public',
             'timezone' => null,
             'classes' => [
-                'dialect' => 'Lead\Sql\Dialect\PostgreSql'
+                'dialect' => 'Lead\Sql\Dialect\Dialect\PostgreSql'
             ],
             'handlers' => [
                 'cast' => [
