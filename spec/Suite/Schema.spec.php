@@ -215,10 +215,10 @@ foreach ($connections as $db => $connection) {
 
                     foreach ($images as $image) {
                         foreach ($image->images_tags as $index => $image_tag) {
-                            expect($image_tag->tag)->toBe($image->tags[$index]);
+                            expect($image_tag->tag->id())->toBe($image->tags[$index]->id());
 
                             foreach ($image_tag->tag->images_tags as $index2 => $image_tag2) {
-                                expect($image_tag2->image)->toBe($image_tag->tag->images[$index2]);
+                                expect($image_tag2->image->id())->toBe($image_tag->tag->images[$index2]->id());
                             }
                         }
                     }
@@ -275,13 +275,86 @@ foreach ($connections as $db => $connection) {
 
                     foreach ($images as $image) {
                         foreach ($image->images_tags as $index => $image_tag) {
-                            expect($image_tag->tag)->toBe($image->tags[$index]);
+                            expect($image_tag->tag->id())->toBe($image->tags[$index]->id());
                         }
                     }
 
                 });
 
                 it("loads nested hasManyTrough relationship", function() {
+
+                    $model = $this->image;
+                    $schema = $model::definition();
+                    $images = $model::all();
+
+                    foreach ($images as $image) {
+                        foreach ($image->images_tags as $index => $image_tag) {
+                            expect($image_tag->tag->id())->toBe($image->tags[$index]->id());
+
+                            foreach ($image_tag->tag->images_tags as $index2 => $image_tag2) {
+                                expect($image_tag2->image->id())->toBe($image_tag->tag->images[$index2]->id());
+                            }
+                        }
+                    }
+
+                });
+
+            });
+
+            context("with unicity enabled", function() {
+
+                beforeEach(function() {
+                    $image = $this->image;
+                    $imageTag = $this->image_tag;
+                    $tag = $this->tag;
+                    $image::unicity(true);
+                    $imageTag::unicity(true);
+                    $tag::unicity(true);
+                });
+
+                afterEach(function() {
+                    $image = $this->image;
+                    $imageTag = $this->image_tag;
+                    $tag = $this->tag;
+                    $image::reset();
+                    $imageTag::reset();
+                    $tag::reset();
+                });
+
+                it("embeds nested hasManyTrough relationship with unicity mode enabled", function() {
+
+                    $model = $this->image;
+                    $schema = $model::definition();
+                    $images = $model::all();
+                    $schema->embed($images, ['tags.images']);
+
+                    foreach ($images as $image) {
+                        foreach ($image->images_tags as $index => $image_tag) {
+                            expect($image_tag->tag)->toBe($image->tags[$index]);
+
+                            foreach ($image_tag->tag->images_tags as $index2 => $image_tag2) {
+                                expect($image_tag2->image)->toBe($image_tag->tag->images[$index2]);
+                            }
+                        }
+                    }
+
+                });
+
+                it("lazy loads a hasManyTrough relationship", function() {
+
+                    $model = $this->image;
+                    $schema = $model::definition();
+                    $images = $model::all();
+
+                    foreach ($images as $image) {
+                        foreach ($image->images_tags as $index => $image_tag) {
+                            expect($image_tag->tag)->toBe($image->tags[$index]);
+                        }
+                    }
+
+                });
+
+                it("lazy loads nested hasManyTrough relationship", function() {
 
                     $model = $this->image;
                     $schema = $model::definition();
@@ -545,7 +618,7 @@ foreach ($connections as $db => $connection) {
                     }
                 }
 
-                $result = $model::load($gallery->id(),  ['embed' => ['images.tags']]);
+                $result = $model::load($gallery->id(), ['embed' => ['images.tags']]);
                 expect($gallery->data())->toEqual($result->data());
 
             });

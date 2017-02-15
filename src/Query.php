@@ -2,6 +2,7 @@
 namespace Chaos\Database;
 
 use PDO;
+use Exception;
 use ArrayIterator;
 use IteratorAggregate;
 use Lead\Set\Set;
@@ -17,9 +18,7 @@ class Query implements IteratorAggregate
      *
      * @var array
      */
-    protected $_classes = [
-        'collector' => 'Chaos\ORM\Collector'
-    ];
+    protected $_classes = [];
 
     /**
      * The fully namespaced model class name on which this query is starting.
@@ -126,6 +125,9 @@ class Query implements IteratorAggregate
         $this->statement()->from([$source => $this->alias('', $schema)]);
 
         foreach ($config['query'] as $key => $value) {
+            if (!method_exists($this, $key)) {
+                throw new Exception("Invalid option `'" . $key . "'` as query option.");
+            }
             $this->{$key}($value);
         }
     }
@@ -203,14 +205,10 @@ class Query implements IteratorAggregate
     public function get($options = [])
     {
         $defaults = [
-            'collector' => null,
             'return'    => 'entity',
             'fetch'     => PDO::FETCH_ASSOC
         ];
         $options += $defaults;
-
-        $class = $this->_classes['collector'];
-        $collector = $options['collector'] = $options['collector'] ?: new $class();
 
         $this->_applyHas();
         $this->_applyLimit();
@@ -230,15 +228,11 @@ class Query implements IteratorAggregate
 
         switch ($return) {
             case 'entity':
-                $source = $schema->source();
-                $key = $schema->key();
-
                 $model = $this->model();
                 if (!$model) {
                     throw new DatabaseException("Missing model for this query, set `'return'` to `'array'` to get row data.");
                 }
                 $collection = $model::create($collection, [
-                    'collector' => $collector,
                     'type' => 'set',
                     'exists' => true
                 ]);
@@ -249,16 +243,10 @@ class Query implements IteratorAggregate
                 }
 
                 foreach ($cursor as $record) {
-                    $uuid = isset($record[$key]) ? $source . ':' . $record[$key] : null;
-                    if (!empty($record[$key]) && $collector->has($uuid)) {
-                        $collection[] = $collector->get($uuid);
-                    } else {
-                        $collection[] = $model::create($record, [
-                            'collector' => $collector,
-                            'exists' => $noFields ? true : null,
-                            'autoreload' => false
-                        ]);
-                    }
+                    $collection[] = $model::create($record, [
+                        'exists' => $noFields ? true : null,
+                        'autoreload' => false
+                    ]);
                 }
                 break;
             case 'array':
