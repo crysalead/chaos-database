@@ -636,19 +636,6 @@ foreach ($connections as $db => $connection) {
 
             });
 
-            it("throws an exception when trying to update an entity with no ID data and exists is `null`", function() {
-
-                $closure = function() {
-                    $model = $this->gallery;
-                    $gallery = $model::create([], ['exists' => null, 'autoreload' => false]);
-                    $gallery->name = 'Foo Gallery';
-                    $gallery->broadcast();
-                };
-
-                expect($closure)->toThrow(new ORMException("Entites must have a valid `false`/`true` existing value to be either inserted or updated."));
-
-            });
-
         });
 
         describe("->save()", function() {

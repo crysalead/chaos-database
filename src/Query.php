@@ -213,7 +213,7 @@ class Query implements IteratorAggregate
         $this->_applyHas();
         $this->_applyLimit();
 
-        if ($noFields = !$this->statement()->data('fields')) {
+        if ($allFields = !$this->statement()->data('fields')) {
             $this->statement()->fields([$this->alias() => ['*']]);
         }
 
@@ -244,8 +244,7 @@ class Query implements IteratorAggregate
 
                 foreach ($cursor as $record) {
                     $collection[] = $model::create($record, [
-                        'exists' => $noFields ? true : null,
-                        'autoreload' => false
+                        'exists' => $allFields ? true : null
                     ]);
                 }
                 break;
@@ -630,7 +629,7 @@ class Query implements IteratorAggregate
         $this->_applyHas();
         $this->_applyLimit();
 
-        if ($noFields = !$this->statement()->data('fields')) {
+        if (!$this->statement()->data('fields')) {
             $this->statement()->fields([$this->alias() => ['*']]);
         }
         $sql = $this->statement()->toString($this->_schemas);
