@@ -215,10 +215,48 @@ foreach ($connections as $db => $connection) {
 
                     foreach ($images as $image) {
                         foreach ($image->images_tags as $index => $image_tag) {
-                            expect($image_tag->tag->id())->toBe($image->tags[$index]->id());
+                            expect($image_tag->tag)->toBe($image->tags[$index]);
 
                             foreach ($image_tag->tag->images_tags as $index2 => $image_tag2) {
-                                expect($image_tag2->image->id())->toBe($image_tag->tag->images[$index2]->id());
+                                expect($image_tag2->image)->toBe($image_tag->tag->images[$index2]);
+                            }
+                        }
+                    }
+
+                });
+
+                it("embeds nested hasManyTrough relationship using object hydration", function() {
+
+                    $model = $this->image;
+                    $schema = $model::definition();
+                    $images = $model::all([], ['return' => 'object']);
+                    $schema->embed($images, ['tags.images'], ['fetchOptions' => ['return' => 'object']]);
+
+                    foreach ($images as $image) {
+                        foreach ($image->images_tags as $index => $image_tag) {
+                            expect($image_tag->tag)->toBe($image->tags[$index]);
+
+                            foreach ($image_tag->tag->images_tags as $index2 => $image_tag2) {
+                                expect($image_tag2->image)->toBe($image_tag->tag->images[$index2]);
+                            }
+                        }
+                    }
+
+                });
+
+                it("embeds nested hasManyTrough relationship using array hydration", function() {
+
+                    $model = $this->image;
+                    $schema = $model::definition();
+                    $images = $model::all([], ['return' => 'array']);
+                    $schema->embed($images, ['tags.images'], ['fetchOptions' => ['return' => 'array']]);
+
+                    foreach ($images as $image) {
+                        foreach ($image['images_tags'] as $index => $image_tag) {
+                            expect($image_tag['tag'])->toBe($image['tags'][$index]);
+
+                            foreach ($image_tag['tag']['images_tags'] as $index2 => $image_tag2) {
+                                expect($image_tag2['image'])->toBe($image_tag['tag']['images'][$index2]);
                             }
                         }
                     }
@@ -275,7 +313,10 @@ foreach ($connections as $db => $connection) {
 
                     foreach ($images as $image) {
                         foreach ($image->images_tags as $index => $image_tag) {
-                            expect($image_tag->tag->id())->toBe($image->tags[$index]->id());
+                            // Warning in lazy load `'images_tags'` is been fetched twice here
+                            // Once through `$image->images_tags` and another time through `$image->tags`
+                            // So `'image_tag'` is beeing overwrited and can't be used bellow in toBe().
+                            expect($image->tags[$index])->toBe($image->images_tags[$index]->tag);
                         }
                     }
 
@@ -289,83 +330,16 @@ foreach ($connections as $db => $connection) {
 
                     foreach ($images as $image) {
                         foreach ($image->images_tags as $index => $image_tag) {
-                            expect($image_tag->tag->id())->toBe($image->tags[$index]->id());
+                            // Warning in lazy load `'images_tags'` is been fetched twice here
+                            // Once through `$image->images_tags` and another time through `$image->tags`
+                            // So `'image_tag'` is beeing overwrited and can't be used bellow in toBe().
+                            expect($image->tags[$index])->toBe($image->images_tags[$index]->tag);
 
                             foreach ($image_tag->tag->images_tags as $index2 => $image_tag2) {
-                                expect($image_tag2->image->id())->toBe($image_tag->tag->images[$index2]->id());
-                            }
-                        }
-                    }
-
-                });
-
-            });
-
-            context("with unicity enabled", function() {
-
-                beforeEach(function() {
-                    $image = $this->image;
-                    $imageTag = $this->image_tag;
-                    $tag = $this->tag;
-                    $image::unicity(true);
-                    $imageTag::unicity(true);
-                    $tag::unicity(true);
-                });
-
-                afterEach(function() {
-                    $image = $this->image;
-                    $imageTag = $this->image_tag;
-                    $tag = $this->tag;
-                    $image::reset();
-                    $imageTag::reset();
-                    $tag::reset();
-                });
-
-                it("embeds nested hasManyTrough relationship with unicity mode enabled", function() {
-
-                    $model = $this->image;
-                    $schema = $model::definition();
-                    $images = $model::all();
-                    $schema->embed($images, ['tags.images']);
-
-                    foreach ($images as $image) {
-                        foreach ($image->images_tags as $index => $image_tag) {
-                            expect($image_tag->tag)->toBe($image->tags[$index]);
-
-                            foreach ($image_tag->tag->images_tags as $index2 => $image_tag2) {
-                                expect($image_tag2->image)->toBe($image_tag->tag->images[$index2]);
-                            }
-                        }
-                    }
-
-                });
-
-                it("lazy loads a hasManyTrough relationship", function() {
-
-                    $model = $this->image;
-                    $schema = $model::definition();
-                    $images = $model::all();
-
-                    foreach ($images as $image) {
-                        foreach ($image->images_tags as $index => $image_tag) {
-                            expect($image_tag->tag)->toBe($image->tags[$index]);
-                        }
-                    }
-
-                });
-
-                it("lazy loads nested hasManyTrough relationship", function() {
-
-                    $model = $this->image;
-                    $schema = $model::definition();
-                    $images = $model::all();
-
-                    foreach ($images as $image) {
-                        foreach ($image->images_tags as $index => $image_tag) {
-                            expect($image_tag->tag)->toBe($image->tags[$index]);
-
-                            foreach ($image_tag->tag->images_tags as $index2 => $image_tag2) {
-                                expect($image_tag2->image)->toBe($image_tag->tag->images[$index2]);
+                                // Warning in lazy load `'images_tags'` is been fetched twice here
+                                // Once through `$image_tag->tag->images_tags` and another time through `$image_tag->tag->images`
+                                // So `'image_tag2'` is beeing overwrited and can't be used bellow in toBe().
+                                expect($image_tag->tag->images[$index2])->toBe($image_tag->tag->images_tags[$index2]->image);
                             }
                         }
                     }

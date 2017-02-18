@@ -131,7 +131,7 @@ class Schema extends \Chaos\ORM\Schema
             $this->insert($filter($entity));
             $success = $success && $this->connection()->errorCode() === null;
             $id = $entity->id() === null ? $this->lastInsertId() : $entity->id();
-            $entity->sync($id, [], ['exists' => true]);
+            $entity->amend($id, [], ['exists' => true]);
         }
         return $success;
     }
@@ -156,7 +156,7 @@ class Schema extends \Chaos\ORM\Schema
             }
             $this->update($filter($entity), [$this->key() => $id]);
             $success = $success && $this->connection()->errorCode() === null;
-            $entity->sync();
+            $entity->amend();
         }
         return $success;
     }
