@@ -98,23 +98,11 @@ class Database extends Source
         $this->_client = $this->_config['client'];
         unset($this->_config['client']);
 
-        $this->_dialect = $config['dialect'];
+        $this->dialect($config['dialect']);
         unset($this->_config['dialect']);
 
         if ($this->_dialect === null) {
-            $dialect = $this->_classes['dialect'];
-            $this->_dialect = new $dialect([
-                'quoter' => function($string) {
-                    return $this->quote($string);
-                },
-                'caster' => function($value, $states = []) {
-                    if (!empty($states['schema'])) {
-                        $type = $states['schema']->type($states['name']);
-                    }
-                    $type = !empty($type) ? $type : gettype($value);
-                    return $this->convert('datasource', $type, $value);
-                }
-            ]);
+            $this->_initDialect();
         }
 
         if ($this->_config['connect']) {
@@ -197,8 +185,33 @@ class Database extends Source
      *
      * @return object.
      */
-    public function dialect() {
+    public function dialect($dialect = null) {
+        if (func_num_args()) {
+            $this->_dialect = $dialect;
+            return $this;
+        }
         return $this->_dialect;
+    }
+
+    /**
+     * Initialize a new dialect instance.
+     */
+    protected function _initDialect()
+    {
+        $Dialect = $this->_classes['dialect'];
+        $dialect = new $Dialect([
+            'quoter' => function($string) {
+                return $this->quote($string);
+            },
+            'caster' => function($value, $states = []) {
+                if (!empty($states['schema'])) {
+                    $type = $states['schema']->type($states['name']);
+                }
+                $type = !empty($type) ? $type : gettype($value);
+                return $this->convert('datasource', $type, $value);
+            }
+        ]);
+        $this->_dialect = $dialect;
     }
 
     /**

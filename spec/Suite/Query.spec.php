@@ -318,12 +318,28 @@ foreach ($connections as $db => $connection) {
 
         describe("->conditions()", function() {
 
-            it("filters out according conditions", function() {
+            it("sets conditions", function() {
 
                 $this->fixtures->populate('gallery');
 
                 $result = $this->query->conditions(['name' => 'Foo Gallery'])->get();
                 expect(count($result))->toBe(1);
+
+            });
+
+            it("sets conditions on an relation", function() {
+
+                $this->fixtures->populate('gallery');
+                $this->fixtures->populate('image');
+
+                $result = $this->query->conditions([
+                    ':or()' => [
+                        [':like' => [[':name' => 'name'], "%Bar%"]],
+                        [':like' => [[':name' => 'images.title'], "%Vegas%"]]
+                    ]
+                ])->has('images')->get();
+
+                expect(count($result))->toBe(2);
 
             });
 
@@ -562,6 +578,22 @@ foreach ($connections as $db => $connection) {
 
                 $count = $this->query->count();
                 expect($count)->toBe(2);
+
+            });
+
+            it("finds all records with a conditions on an relation", function() {
+
+                $this->fixtures->populate('gallery');
+                $this->fixtures->populate('image');
+
+                $result = $this->query->conditions([
+                    ':or()' => [
+                        [':like' => [[':name' => 'name'], "%Bar%"]],
+                        [':like' => [[':name' => 'images.title'], "%Vegas%"]]
+                    ]
+                ])->has('images')->count();
+
+                expect($result)->toBe(2);
 
             });
 

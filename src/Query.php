@@ -56,7 +56,7 @@ class Query implements IteratorAggregate
     protected $_aliasCounter = [];
 
     /**
-     * Map beetween relation pathsand corresponding aliases.
+     * Map beetween relation paths and corresponding aliases.
      *
      * @var array
      */
@@ -213,16 +213,21 @@ class Query implements IteratorAggregate
         $this->_applyHas();
         $this->_applyLimit();
 
-        if ($allFields = !$this->statement()->data('fields')) {
-            $this->statement()->fields([$this->alias() => ['*']]);
+        $schema = $this->schema();
+        $statement = $this->statement();
+
+        if ($allFields = !$statement->data('fields')) {
+            $statement->fields([$this->alias() => ['*']]);
+        }
+
+        if ($statement->data('joins')) {
+            $this->group($schema->key());
         }
 
         $collection = [];
         $return = $options['return'];
 
-        $schema = $this->schema();
-
-        $cursor = $schema->connection()->query($this->statement()->toString($this->_schemas), [], [
+        $cursor = $schema->connection()->query($statement->toString($this->_schemas, $this->_aliases), [], [
             'fetch' => $return === 'object' ? PDO::FETCH_OBJ : $options['fetch']
         ]);
 
@@ -291,16 +296,20 @@ class Query implements IteratorAggregate
     public function count()
     {
         $connection = $this->schema()->connection();
+        $this->_applyHas();
+
         $statement = $this->statement();
         $counter = $connection->dialect()->statement('select');
-        $counter->fields([':plain' => 'COUNT(*)']);
+
+        $primaryKey = $statement->dialect()->name($this->alias() . '.' .  $this->schema()->key());
+        $counter->fields([':plain' => 'COUNT(DISTINCT ' . $primaryKey . ')']);
         $counter->data('from', $statement->data('from'));
         $counter->data('joins', $statement->data('joins'));
         $counter->data('where', $statement->data('where'));
         $counter->data('group', $statement->data('group'));
         $counter->data('having', $statement->data('having'));
 
-        $cursor = $connection->query($counter->toString());
+        $cursor = $connection->query($counter->toString($this->_schemas, $this->_aliases));
         $result = $cursor->current();
         return (int) current($result);
     }
@@ -468,7 +477,7 @@ class Query implements IteratorAggregate
      */
     public function has($has = null, $conditions = [])
     {
-        if (!$has) {
+        if (!func_num_args()) {
             return $this->_has;
         }
         if (!is_array($has)) {
@@ -516,6 +525,7 @@ class Query implements IteratorAggregate
         foreach ($this->has() as $path => $conditions) {
             $this->where($conditions, $this->alias($path));
         }
+        $this->_has = [];
     }
 
     /**
@@ -632,7 +642,7 @@ class Query implements IteratorAggregate
         if (!$this->statement()->data('fields')) {
             $this->statement()->fields([$this->alias() => ['*']]);
         }
-        $sql = $this->statement()->toString($this->_schemas);
+        $sql = $this->statement()->toString($this->_schemas, $this->_aliases);
         $this->_statement = $save;
         return $sql;
     }
