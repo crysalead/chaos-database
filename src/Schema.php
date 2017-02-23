@@ -130,8 +130,9 @@ class Schema extends \Chaos\ORM\Schema
         foreach ($inserts as $entity) {
             $this->insert($filter($entity));
             $success = $success && $this->connection()->errorCode() === null;
-            $id = $entity->id() === null ? $this->lastInsertId() : $entity->id();
-            $entity->amend($id, [], ['exists' => true]);
+            $id = $entity->id();
+            $id = $id === null ? $this->lastInsertId() : $id;
+            $entity->amend([$this->key() => $id], ['exists' => true]);
         }
         return $success;
     }
