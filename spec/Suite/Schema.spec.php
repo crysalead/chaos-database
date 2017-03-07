@@ -350,13 +350,13 @@ foreach ($connections as $db => $connection) {
 
         });
 
-        describe("->broadcast()", function() {
+        describe("->save()", function() {
 
             it("saves empty entities", function() {
 
                 $model = $this->image;
                 $image = $model::create();
-                expect($image->broadcast())->toBe(true);
+                expect($image->save())->toBe(true);
                 expect($image->exists())->toBe(true);
 
             });
@@ -372,7 +372,7 @@ foreach ($connections as $db => $connection) {
                   'gallery_id' => 3
                 ]);
 
-                expect($image->broadcast(['whitelist' => ['title']]))->toBe(true);
+                expect($image->save(['whitelist' => ['title']]))->toBe(true);
                 expect($image->exists())->toBe(true);
 
                 $reloaded = $model::load($image->id());
@@ -394,7 +394,7 @@ foreach ($connections as $db => $connection) {
 
                 $model = $this->image;
                 $image = $model::create($data);
-                expect($image->broadcast())->toBe(true);
+                expect($image->save())->toBe(true);
                 expect($image->exists())->toBe(true);
                 expect($image->id())->not->toBe(null);
                 expect($image->modified())->toBe(false);
@@ -408,7 +408,7 @@ foreach ($connections as $db => $connection) {
                 ]);
 
                 $reloaded->title = 'Amiga 1260';
-                expect($reloaded->broadcast())->toBe(true);
+                expect($reloaded->save())->toBe(true);
                 expect($reloaded->exists())->toBe(true);
                 expect($reloaded->id())->toBe($image->id());
                 expect($reloaded->modified())->toBe(false);
@@ -435,7 +435,7 @@ foreach ($connections as $db => $connection) {
 
                 $model = $this->gallery;
                 $gallery = $model::create($data);
-                expect($gallery->broadcast())->toBe(true);
+                expect($gallery->save(['embed' => 'images']))->toBe(true);
 
                 expect($gallery->id())->not->toBe(null);
                 foreach ($gallery->images as $image) {
@@ -459,12 +459,12 @@ foreach ($connections as $db => $connection) {
 
                 $model = $this->image;
                 $image = $model::create($data);
-                expect($image->broadcast())->toBe(true);
+                expect($image->save(['embed' => 'gallery']))->toBe(true);
 
                 expect($image->id())->not->toBe(null);
                 expect($image->gallery_id)->toBe($image->gallery->id());
 
-                $result = $model::load($image->id(),  ['embed' => ['gallery']]);
+                $result = $model::load($image->id(), ['embed' => ['gallery']]);
                 expect($image->data())->toEqual($result->data());
 
             });
@@ -481,7 +481,7 @@ foreach ($connections as $db => $connection) {
                 $model = $this->gallery;
                 $gallery = $model::create($data);
 
-                expect($gallery->broadcast())->toBe(true);
+                expect($gallery->save(['embed' => 'detail']))->toBe(true);
 
                 expect($gallery->id())->not->toBe(null);
                 expect($gallery->detail->gallery_id)->toBe($gallery->id());
@@ -510,7 +510,7 @@ foreach ($connections as $db => $connection) {
 
                     $model = $this->image;
                     $this->entity = $model::create($data);
-                    $this->entity->broadcast();
+                    $this->entity->save(['embed' => ['gallery', 'tags']]);
 
                 });
 
@@ -527,7 +527,7 @@ foreach ($connections as $db => $connection) {
                     }
 
                     $model = $this->image;
-                    $result = $model::load($this->entity->id(),  ['embed' => ['gallery', 'tags']]);
+                    $result = $model::load($this->entity->id(), ['embed' => ['gallery', 'tags']]);
                     expect($this->entity->data())->toEqual($result->data());
 
                 });
@@ -540,7 +540,7 @@ foreach ($connections as $db => $connection) {
                     expect(count($reloaded->tags))->toBe(4);
 
                     unset($reloaded->tags[0]);
-                    expect($reloaded->broadcast())->toBe(true);
+                    expect($reloaded->save(['embed' => 'tags']))->toBe(true);
 
                     $persisted = $model::find()->where(['id' => $reloaded->id()])->embed('tags')->first();
 
@@ -575,7 +575,7 @@ foreach ($connections as $db => $connection) {
 
                 $model = $this->gallery;
                 $gallery = $model::create($data);
-                expect($gallery->broadcast(['embed' => 'images.tags']))->toBe(true);
+                expect($gallery->save(['embed' => 'images.tags']))->toBe(true);
 
                 expect($gallery->id())->not->toBe(null);
                 expect($gallery->images)->toHaveLength(1);
@@ -603,35 +603,10 @@ foreach ($connections as $db => $connection) {
                     $model = $this->gallery;
                     $gallery = $model::create([], ['exists' => true]);
                     $gallery->name = 'Foo Gallery';
-                    $gallery->broadcast();
+                    $gallery->save();
                 };
 
                 expect($closure)->toThrow(new ORMException("Existing entities must have a valid ID."));
-
-            });
-
-        });
-
-        describe("->save()", function() {
-
-            it("saves an entity", function() {
-
-                $data = [
-                    'name' => 'amiga_1200.jpg',
-                    'title' => 'Amiga 1200'
-                ];
-
-                $model = $this->image;
-                $image = $model::create($data);
-
-                expect($image)->toReceive('broadcast')->with([
-                    'custom' => 'option',
-                    'embed' => false
-                ]);
-
-                expect($image->save(['custom' => 'option']))->toBe(true);
-                expect($image->exists())->toBe(true);
-                expect($image->id())->not->toBe(null);
 
             });
 
@@ -649,7 +624,7 @@ foreach ($connections as $db => $connection) {
                 $model = $this->image;
                 $image = $model::create($data);
 
-                expect($image->broadcast())->toBe(true);
+                expect($image->save())->toBe(true);
                 expect($image->exists())->toBe(true);
 
                 expect($image->delete())->toBe(true);

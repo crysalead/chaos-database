@@ -520,7 +520,8 @@ class Query implements IteratorAggregate
      */
     protected function _applyHas()
     {
-        $tree = Set::expand(array_fill_keys(array_keys($this->has()), false));
+        $schema = $this->schema();
+        $tree = $schema->treeify($this->has());
         $this->_applyJoins($this->schema(), $tree, '', $this->alias());
         foreach ($this->has() as $path => $conditions) {
             $this->where($conditions, $this->alias($path));
@@ -555,9 +556,10 @@ class Query implements IteratorAggregate
      */
     protected function _applyJoins($schema, $tree, $basePath, $aliasFrom)
     {
-        foreach ($tree as $name => $childs) {
+        foreach ($tree as $name => $children) {
             $rel = $schema->relation($name);
             $path = $basePath ? $basePath . '.' . $name : $name;
+            $children = !empty($children['embed']) ? $children['embed'] : [];
 
             if ($rel->type() !== 'hasManyThrough') {
                 $to = $this->_join($path, $rel, $aliasFrom);
@@ -575,9 +577,9 @@ class Query implements IteratorAggregate
                 $to = $this->_join($path, $relTo, $aliasThrough);
             }
 
-            if (!empty($childs)) {
+            if ($children) {
                 $model = $rel->to();
-                $this->_applyJoins($model::definition(), $childs, $path, $to);
+                $this->_applyJoins($model::definition(), $children, $path, $to);
             }
         }
     }
