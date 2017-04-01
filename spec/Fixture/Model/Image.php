@@ -7,8 +7,8 @@ class Image extends BaseModel
     {
         $schema->column('id', ['type' => 'serial']);
         $schema->column('gallery_id', ['type' => 'integer']);
-        $schema->column('name', ['type' => 'string']);
-        $schema->column('title', ['type' => 'string', 'length' => 50]);
+        $schema->column('name', ['type' => 'string', 'null' => true]);
+        $schema->column('title', ['type' => 'string', 'length' => 50, 'null' => true]);
 
         $schema->belongsTo('gallery', Gallery::class, [
             'keys' => ['gallery_id' => 'id']

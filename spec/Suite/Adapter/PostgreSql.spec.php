@@ -131,7 +131,7 @@ describe("PostgreSql", function() {
                 'use'     => 'character varying',
                 'type'    => 'string',
                 'length'  => 128,
-                'null'    => true,
+                'null'    => false,
                 'default' => 'Johnny Boy',
                 'array'   => false
             ]);
@@ -139,7 +139,7 @@ describe("PostgreSql", function() {
             expect($gallery->column('active'))->toEqual([
                 'use'     => 'boolean',
                 'type'    => 'boolean',
-                'null'    => true,
+                'null'    => false,
                 'default' => true,
                 'array'   => false
             ]);
@@ -147,7 +147,7 @@ describe("PostgreSql", function() {
             expect($gallery->column('inactive'))->toEqual([
                 'use'     => 'boolean',
                 'type'    => 'boolean',
-                'null'    => true,
+                'null'    => false,
                 'default' => false,
                 'array'   => false
             ]);
@@ -157,7 +157,7 @@ describe("PostgreSql", function() {
                 'type'      => 'decimal',
                 'length'    => 10,
                 'precision' => 2,
-                'null'      => true,
+                'null'      => false,
                 'default'   => null,
                 'array'     => false
             ]);
@@ -166,7 +166,7 @@ describe("PostgreSql", function() {
                 'use'     => 'timestamp without time zone',
                 'type'    => 'datetime',
                 'length'  => 6,
-                'null'    => true,
+                'null'    => false,
                 'default' => null,
                 'array'   => false
             ]);
@@ -188,21 +188,21 @@ describe("PostgreSql", function() {
             expect($gallery->column('name'))->toEqual([
                 'type'    => 'string',
                 'length'  => 128,
-                'null'    => true,
+                'null'    => false,
                 'default' => 'Johnny Boy',
                 'array'   => false
             ]);
 
             expect($gallery->column('active'))->toEqual([
                 'type'    => 'boolean',
-                'null'    => true,
+                'null'    => false,
                 'default' => true,
                 'array'   => false
             ]);
 
             expect($gallery->column('inactive'))->toEqual([
                 'type'    => 'boolean',
-                'null'    => true,
+                'null'    => false,
                 'default' => false,
                 'array'   => false
             ]);
@@ -211,14 +211,14 @@ describe("PostgreSql", function() {
                 'type'     => 'decimal',
                 'length'   => 10,
                 'precision'=> 2,
-                'null'     => true,
+                'null'     => false,
                 'array'    => false
             ]);
 
             expect($gallery->column('created'))->toEqual([
                 'use'     => 'timestamp',
                 'type'    => 'datetime',
-                'null'    => true,
+                'null'    => false,
                 'array'   => false,
                 'default' => [':plain' => 'CURRENT_TIMESTAMP']
             ]);
@@ -255,7 +255,7 @@ describe("PostgreSql", function() {
 
             $schema->column('id',         ['type' => 'serial']);
             $schema->column('name',       ['type' => 'string']);
-            $schema->column('null',       ['type' => 'string']);
+            $schema->column('null',       ['type' => 'string', 'null' => true]);
             $schema->column('value',      ['type' => 'integer']);
             $schema->column('double',     ['type' => 'float']);
             $schema->column('revenue',    [
@@ -309,7 +309,7 @@ describe("PostgreSql", function() {
             $schema = new Schema(['connection' => $this->adapter]);
             $schema->source('gallery');
             $schema->column('id',   ['type' => 'serial']);
-            $schema->column('name', ['type' => 'string']);
+            $schema->column('name', ['type' => 'string', 'null' => true]);
             $schema->create();
 
             $schema->insert(['name' => 'new gallery']);
@@ -323,7 +323,7 @@ describe("PostgreSql", function() {
             $schema = new Schema(['connection' => $this->adapter]);
             $schema->source('gallery');
             $schema->column('id',   ['type' => 'serial']);
-            $schema->column('name', ['type' => 'string']);
+            $schema->column('name', ['type' => 'string', 'null' => true]);
             $schema->create();
 
             $schema->insert([]);

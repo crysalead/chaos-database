@@ -6,7 +6,7 @@ class Gallery extends BaseModel
     protected static function _define($schema)
     {
         $schema->column('id', ['type' => 'serial']);
-        $schema->column('name', ['type' => 'string']);
+        $schema->column('name', ['type' => 'string', 'null' => true]);
 
         $schema->hasOne('detail', GalleryDetail::class, [
             'keys' => ['id' => 'gallery_id']

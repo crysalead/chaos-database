@@ -131,7 +131,7 @@ describe("MySql", function() {
                 'use'     => 'varchar',
                 'type'    => 'string',
                 'length'  => 128,
-                'null'    => true,
+                'null'    => false,
                 'default' => 'Johnny Boy',
                 'array'   => false
             ]);
@@ -140,7 +140,7 @@ describe("MySql", function() {
                 'use'     => 'tinyint',
                 'type'    => 'boolean',
                 'length'  => 1,
-                'null'    => true,
+                'null'    => false,
                 'default' => true,
                 'array'   => false
             ]);
@@ -149,7 +149,7 @@ describe("MySql", function() {
                 'use'     => 'tinyint',
                 'type'    => 'boolean',
                 'length'  => 1,
-                'null'    => true,
+                'null'    => false,
                 'default' => false,
                 'array'   => false
             ]);
@@ -159,7 +159,7 @@ describe("MySql", function() {
                 'type'      => 'decimal',
                 'length'    => 10,
                 'precision' => 2,
-                'null'      => true,
+                'null'      => false,
                 'default'   => null,
                 'array'     => false
             ]);
@@ -167,7 +167,7 @@ describe("MySql", function() {
             expect($gallery->column('created'))->toEqual([
                 'use'     => 'timestamp',
                 'type'    => 'datetime',
-                'null'    => true,
+                'null'    => false,
                 'default' => null,
                 'array'   => false
             ]);
@@ -189,21 +189,21 @@ describe("MySql", function() {
             expect($gallery->column('name'))->toEqual([
                 'type'    => 'string',
                 'length'  => 128,
-                'null'    => true,
+                'null'    => false,
                 'default' => 'Johnny Boy',
                 'array'   => false
             ]);
 
             expect($gallery->column('active'))->toEqual([
                 'type'    => 'boolean',
-                'null'    => true,
+                'null'    => false,
                 'default' => true,
                 'array'   => false
             ]);
 
             expect($gallery->column('inactive'))->toEqual([
                 'type'    => 'boolean',
-                'null'    => true,
+                'null'    => false,
                 'default' => false,
                 'array'   => false
             ]);
@@ -212,14 +212,14 @@ describe("MySql", function() {
                 'type'     => 'decimal',
                 'length'   => 10,
                 'precision'=> 2,
-                'null'     => true,
+                'null'     => false,
                 'array'    => false
             ]);
 
             expect($gallery->column('created'))->toEqual([
                 'use'     => 'timestamp',
                 'type'    => 'datetime',
-                'null'    => true,
+                'null'    => false,
                 'array'   => false,
                 'default' => [':plain' => 'CURRENT_TIMESTAMP']
             ]);
@@ -237,7 +237,7 @@ describe("MySql", function() {
 
             $schema->column('id',         ['type' => 'serial']);
             $schema->column('name',       ['type' => 'string']);
-            $schema->column('null',       ['type' => 'string']);
+            $schema->column('null',       ['type' => 'string', 'null' => true]);
             $schema->column('value',      ['type' => 'integer']);
             $schema->column('double',     ['type' => 'float']);
             $schema->column('revenue',    [
@@ -291,7 +291,7 @@ describe("MySql", function() {
             $schema = new Schema(['connection' => $this->adapter]);
             $schema->source('gallery');
             $schema->column('id',   ['type' => 'serial']);
-            $schema->column('name', ['type' => 'string']);
+            $schema->column('name', ['type' => 'string', 'null' => true]);
             $schema->create();
 
             $schema->insert(['name' => 'new gallery']);
@@ -305,7 +305,7 @@ describe("MySql", function() {
             $schema = new Schema(['connection' => $this->adapter]);
             $schema->source('gallery');
             $schema->column('id',   ['type' => 'serial']);
-            $schema->column('name', ['type' => 'string']);
+            $schema->column('name', ['type' => 'string', 'null' => true]);
             $schema->create();
 
             $schema->insert([]);
