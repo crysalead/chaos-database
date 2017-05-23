@@ -231,6 +231,8 @@ class Query implements IteratorAggregate
             'fetch' => $return === 'object' ? PDO::FETCH_OBJ : $options['fetch']
         ]);
 
+        $key = $schema->key();
+
         switch ($return) {
             case 'entity':
                 $model = $this->model();
@@ -249,7 +251,7 @@ class Query implements IteratorAggregate
 
                 foreach ($cursor as $record) {
                     $collection[] = $model::create($record, [
-                        'exists' => $allFields ? true : null
+                        'exists' => isset($record[$key]) ? true : null
                     ]);
                 }
                 break;
