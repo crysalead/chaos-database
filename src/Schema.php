@@ -107,7 +107,7 @@ class Schema extends \Chaos\ORM\Schema
         $query = $this->connection()->dialect()->statement('create table', ['schema' => $this]);
         $query->ifNotExists($options['soft'])
               ->table($this->_source)
-              ->columns($this->columns())
+              ->columns($this->columns(true))
               ->constraints($this->meta('constraints'))
               ->meta($this->meta('table'));
 
@@ -280,6 +280,7 @@ class Schema extends \Chaos\ORM\Schema
     public function convert($mode, $type, $value, $options = [])
     {
         $formatter = null;
+        $type = $value === null ? 'null' : $type;
         if (is_array($value)) {
             $key = key($value);
             $connection = $this->_connection;

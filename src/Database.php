@@ -121,6 +121,7 @@ class Database extends Source
         $this->formatter('datasource', 'boolean',   $handlers['datasource']['boolean']);
         $this->formatter('datasource', 'null',      $handlers['datasource']['null']);
         $this->formatter('datasource', 'string',    $handlers['datasource']['quote']);
+        $this->formatter('datasource', 'json',      $handlers['datasource']['json']);
         $this->formatter('datasource', '_default_', $handlers['datasource']['quote']);
 
         $this->formatter('array', 'id',     $handlers['array']['integer']);
@@ -210,10 +211,9 @@ class Database extends Source
             },
             'caster' => function($value, $states = []) {
                 if (!empty($states['schema'])) {
-                    $type = $states['schema']->type($states['name']);
+                    return $states['schema']->format('datasource', $states['name'], $value);
                 }
-                $type = !empty($type) ? $type : gettype($value);
-                return $this->convert('datasource', $type, $value);
+                return $this->convert('datasource', gettype($value), $value);
             }
         ]);
         $this->_dialect = $dialect;
@@ -338,6 +338,12 @@ class Database extends Source
                 },
                 'null'    => function($value, $options = []) {
                     return 'NULL';
+                },
+                'json'    => function($value, $options = []) {
+                    if (is_object($value)) {
+                        $value = $value->data();
+                    }
+                    return $this->dialect()->quote((string) json_encode($value));
                 }
             ]
         ] + parent::_handlers();
