@@ -25,11 +25,13 @@ describe("PostgreSql", function() {
             expect(PostgreSql::enabled())->toEqual([
                 'arrays'       => true,
                 'transactions' => true,
+                'savepoints'   => true,
                 'booleans'     => true,
                 'default'      => true
             ]);
             expect(PostgreSql::enabled('arrays'))->toBe(true);
             expect(PostgreSql::enabled('transactions'))->toBe(true);
+            expect(PostgreSql::enabled('savepoints'))->toBe(true);
             expect(PostgreSql::enabled('booleans'))->toBe(true);
             expect(PostgreSql::enabled('default'))->toBe(true);
 

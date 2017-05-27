@@ -1,6 +1,7 @@
 <?php
 namespace Chaos\Database\Spec\Suite;
 
+use Exception;
 use DateTime;
 use Lead\Set\Set;
 use Chaos\ORM\ORMException;
@@ -17,7 +18,8 @@ $box = box('chaos.spec');
 
 $connections = [
     "MySQL" => $box->has('source.database.mysql') ? $box->get('source.database.mysql') : null,
-    "PgSql" => $box->has('source.database.postgresql') ? $box->get('source.database.postgresql') : null
+    "PostgreSQL" => $box->has('source.database.postgresql') ? $box->get('source.database.postgresql') : null,
+    "SQLite" => $box->has('source.database.sqlite') ? $box->get('source.database.sqlite') : null
 ];
 
 foreach ($connections as $db => $connection) {
@@ -607,6 +609,112 @@ foreach ($connections as $db => $connection) {
                 };
 
                 expect($closure)->toThrow(new ORMException("Existing entities must have a valid ID."));
+
+            });
+
+            context("with transactions", function() {
+
+                it("commits on success", function() {
+
+                    $id = null;
+
+                    $this->connection->transaction(function() use (&$id) {
+                        $model = $this->image;
+                        $image = $model::create();
+                        $image->save();
+                        $id = $image->id();
+                    });
+
+                    $model = $this->image;
+                    expect($model::load($id))->toBeAnInstanceOf($model);
+                    expect($this->connection->transactionLevel())->toBe(0);
+
+                });
+
+                it("allows manual commit", function() {
+
+                    $model = $this->image;
+                    $image = $model::create();
+
+                    $this->connection->beginTransaction();
+                    $image->save();
+                    $id = $image->id();
+                    $this->connection->commit();
+
+                    expect($model::load($id))->toBeAnInstanceOf($model);
+                    expect($this->connection->transactionLevel())->toBe(0);
+
+                });
+
+                it("rollbacks on error", function() {
+
+                    $id = null;
+
+                    $closure = function() {
+                        $this->connection->transaction(function() use (&$id) {
+                            $model = $this->image;
+                            $image = $model::create();
+                            $image->save();
+                            $id = $image->id();
+                            throw new Exception('Error Processing.');
+                        });
+                    };
+
+                    expect($closure)->toThrow(new Exception('Error Processing.'));
+
+                    $model = $this->image;
+                    expect($model::load($id))->toBe(false);
+                    expect($this->connection->transactionLevel())->toBe(0);
+
+                });
+
+                it("allows manual rollback", function() {
+
+                    $model = $this->image;
+                    $image = $model::create();
+
+                    $this->connection->beginTransaction();
+                    $image->save();
+                    $id = $image->id();
+                    $this->connection->rollback();
+
+                    expect($model::load($id))->toBe(false);
+                    expect($this->connection->transactionLevel())->toBe(0);
+
+                });
+
+                it("supports save points", function() {
+                    $model = $this->image;
+                    $image = $model::create(['name' => 'Initial']);
+                    $image->save();
+                    $id = $image->id();
+
+                    $this->connection->beginTransaction();
+                    $image->set('name', 'Update1');
+                    $image->save();
+
+                    $this->connection->beginTransaction();
+                    $image->set('name', 'Update2');
+                    $image->save();
+
+                    $this->connection->beginTransaction();
+                    $image->set('name', 'Update3');
+                    $image->save();
+
+                    expect($model::load($id)->name)->toBe('Update3');
+
+                    $this->connection->rollback(2);
+                    expect($model::load($id)->name)->toBe('Update2');
+
+                    $this->connection->rollback(1);
+                    expect($model::load($id)->name)->toBe('Update1');
+
+                    $this->connection->rollback();
+
+                    expect($model::load($id)->name)->toBe('Initial');
+                    expect($this->connection->transactionLevel())->toBe(0);
+
+                });
 
             });
 

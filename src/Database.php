@@ -1,6 +1,8 @@
 <?php
 namespace Chaos\Database;
 
+use Exception;
+use Throwable;
 use InvalidArgumentException;
 use PDO;
 use PDOException;
@@ -35,6 +37,12 @@ class Database extends Source
      * @var mixed
      */
     protected $_client = null;
+
+    /**
+     * The transaction level
+     *
+     */
+    protected $_transactionLevel = 0;
 
     /**
      * Specific value denoting whether or not table aliases should be used in DELETE and UPDATE queries.
@@ -187,6 +195,37 @@ class Database extends Source
     }
 
     /**
+     * Checks the connection status of this data source.
+     *
+     * @return boolean Returns a boolean indicating whether or not the connection is currently active.
+     *                 This value may not always be accurate, as the connection could have timed out or
+     *                 otherwise been dropped by the remote resource during the course of the request.
+     */
+    public function connected() {
+        return !!$this->_client;
+    }
+
+    /**
+     * Disconnects the adapter from the database.
+     *
+     * @return boolean Returns `true` on success, else `false`.
+     */
+    public function disconnect()
+    {
+        $this->_client = null;
+        return true;
+    }
+
+    /**
+     * Returns the pdo connection instance.
+     *
+     * @return mixed
+     */
+    public function client() {
+        return $this->_client;
+    }
+
+    /**
      * Returns the SQL dialect instance.
      *
      * @return object.
@@ -220,23 +259,147 @@ class Database extends Source
     }
 
     /**
-     * Returns the pdo connection instance.
+     * Finds records using a SQL query.
      *
-     * @return mixed
+     * @param  string $sql  SQL query to execute.
+     * @param  array  $data Array of bound parameters to use as values for query.
+     * @return object       A `Cursor` instance.
      */
-    public function client() {
-        return $this->_client;
+    public function query($sql, $data = [], $options = [])
+    {
+        $defaults = ['exception' => true];
+        $options += $defaults;
+
+        try {
+            $statement = $this->client()->prepare($sql);
+            if ($statement->execute($data)) {
+                $cursor = $this->_classes['cursor'];
+                return new $cursor($options + ['resource' => $statement]);
+            }
+        } catch (PDOException $e) {
+            $this->_exception($e, $sql);
+        }
     }
 
     /**
-     * Checks the connection status of this data source.
+     * Execute a raw query.
      *
-     * @return boolean Returns a boolean indicating whether or not the connection is currently active.
-     *                 This value may not always be accurate, as the connection could have timed out or
-     *                 otherwise been dropped by the remote resource during the course of the request.
+     * @param  string  $sql SQL query to execute.
+     * @return boolean
      */
-    public function connected() {
-        return !!$this->_client;
+    public function execute($sql)
+    {
+        return $this->client()->exec($sql);
+    }
+
+    /**
+     * Returns the last insert id from the database.
+     *
+     * @return mixed Returns the last insert id.
+     */
+    public function lastInsertId()
+    {
+        return $this->client()->lastInsertId();
+    }
+
+    /**
+     * Getter/Setter for the connection's encoding
+     * Abstract. Must be defined by child class.
+     *
+     * @param mixed $encoding
+     * @return mixed.
+     */
+    public function encoding($encoding = null)
+    {
+        throw new DatabaseException('Encoding is not supported by this driver.');
+    }
+
+    /**
+     * Start a new database transaction.
+     *
+     * @throws Exception
+     */
+    public function beginTransaction()
+    {
+        if ($this->_transactionLevel === 0) {
+            $this->client()->beginTransaction();
+        } elseif ($this->_transactionLevel >0 && static::enabled('savepoints')) {
+            $name = 'TRANS' . ($this->_transactionLevel + 1);
+            $this->execute("SAVEPOINT {$name}");
+        }
+        $this->_transactionLevel++;
+    }
+
+    /**
+     * Execute a Closure within a transaction.
+     *
+     * @param  Closure $transaction
+     * @param  integer $maxRepeat
+     * @return mixed
+     *
+     * @throws Throwable
+     */
+    public function transaction($transaction, $maxRepeat = 1)
+    {
+        for ($count = 1; $count <= $maxRepeat; $count++) {
+            $this->beginTransaction();
+            try {
+                $transaction($this);
+                $this->commit();
+            } catch (Exception $e) {
+                $this->_transactionException($e, $count, $maxRepeat);
+            } catch (Throwable $e) {
+                $this->rollBack();
+                throw $e;
+            }
+        }
+    }
+
+    /**
+     * Get the number of active transactions.
+     *
+     * @return integer
+     */
+    public function transactionLevel()
+    {
+        return $this->_transactionLevel;
+    }
+
+    /**
+     * Commit the active database transaction.
+     */
+    public function commit()
+    {
+        if ($this->_transactionLevel > 0) {
+            $this->_transactionLevel--;
+        }
+
+        if ($this->_transactionLevel === 0) {
+            $this->client()->commit();
+        }
+    }
+
+    /**
+     * Rollback the active database transaction.
+     *
+     * @param integer|null $toLevel
+     */
+    public function rollBack($toLevel = null)
+    {
+        $toLevel = !func_num_args() ? $this->_transactionLevel - 1 : $toLevel;
+
+        if ($toLevel < 0 || $toLevel >= $this->_transactionLevel) {
+            return;
+        }
+
+        if ($toLevel === 0) {
+            $this->client()->rollBack();
+        } elseif (static::enabled('savepoints')) {
+            $name = 'TRANS' . ($toLevel + 1);
+            $this->execute("ROLLBACK TO SAVEPOINT {$name}");
+        }
+
+        $this->_transactionLevel = $toLevel;
     }
 
     /**
@@ -263,22 +426,6 @@ class Database extends Source
     }
 
     /**
-     * PDOException wrapper
-     *
-     * @param  PDOException $e   A PDOException.
-     * @param  string       $sql An optionnal SQL query.
-     * @throws DatabaseException
-     */
-    protected function _exception($e, $sql = null)
-    {
-        $config = $this->_config;
-        $code = $e->getCode();
-        $msg = $e->getMessage();
-        $exception = new DatabaseException("{$msg}" . ($sql ? " in {$sql}" : ''), (int) $code);
-        throw $exception;
-    }
-
-    /**
      * Returns the list of tables in the currently-connected database.
      *
      * @return array Returns an array of sources to which models can connect.
@@ -293,6 +440,26 @@ class Database extends Source
             $sources[$name] = $name;
         }
         return $sources;
+    }
+
+    /**
+     * Formats a value according to its definition.
+     *
+     * @param   string $mode  The format mode (i.e. `'cast'` or `'datasource'`).
+     * @param   string $type  The type name.
+     * @param   mixed  $value The value to format.
+     * @return  mixed         The formated value.
+     */
+    public function convert($mode, $type, $value, $options = [])
+    {
+        if (is_array($value)) {
+            $key = key($value);
+            $dialect = $this->dialect();
+            if ($dialect && $dialect->isOperator($key)) {
+               return $dialect->format($key, $value[$key]);
+            }
+        }
+        return parent::convert($mode, $type, $value, $options);
     }
 
     /**
@@ -350,59 +517,6 @@ class Database extends Source
     }
 
     /**
-     * Formats a value according to its definition.
-     *
-     * @param   string $mode  The format mode (i.e. `'cast'` or `'datasource'`).
-     * @param   string $type  The type name.
-     * @param   mixed  $value The value to format.
-     * @return  mixed         The formated value.
-     */
-    public function convert($mode, $type, $value, $options = [])
-    {
-        if (is_array($value)) {
-            $key = key($value);
-            $dialect = $this->dialect();
-            if ($dialect && $dialect->isOperator($key)) {
-               return $dialect->format($key, $value[$key]);
-            }
-        }
-        return parent::convert($mode, $type, $value, $options);
-    }
-
-    /**
-     * Finds records using a SQL query.
-     *
-     * @param  string $sql  SQL query to execute.
-     * @param  array  $data Array of bound parameters to use as values for query.
-     * @return object       A `Cursor` instance.
-     */
-    public function query($sql, $data = [], $options = [])
-    {
-        $defaults = ['exception' => true];
-        $options += $defaults;
-
-        try {
-            $statement = $this->client()->prepare($sql);
-            if ($statement->execute($data)) {
-                $cursor = $this->_classes['cursor'];
-                return new $cursor($options + ['resource' => $statement]);
-            }
-        } catch (PDOException $e) {
-            $this->_exception($e, $sql);
-        }
-    }
-
-    /**
-     * Returns the last insert id from the database.
-     *
-     * @return mixed Returns the last insert id.
-     */
-    public function lastInsertId()
-    {
-        return $this->client()->lastInsertId();
-    }
-
-    /**
      * Retrieves database error code.
      *
      * @return array
@@ -431,25 +545,92 @@ class Database extends Source
     }
 
     /**
-     * Disconnects the adapter from the database.
+     * PDOException wrapper
      *
-     * @return boolean Returns `true` on success, else `false`.
+     * @param  PDOException $e   A PDOException.
+     * @param  string       $sql An optionnal SQL query.
+     * @throws DatabaseException
      */
-    public function disconnect()
+    protected function _exception($e, $sql = null)
     {
-        $this->_client = null;
-        return true;
+        $config = $this->_config;
+        $code = $e->getCode();
+        $msg = $e->getMessage();
+        $exception = new DatabaseException("{$msg}" . ($sql ? " in {$sql}" : ''), (int) $code);
+        throw $exception;
     }
 
     /**
-     * Getter/Setter for the connection's encoding
-     * Abstract. Must be defined by child class.
+     * Handle an exception encountered when running a transacted statement.
      *
-     * @param mixed $encoding
-     * @return mixed.
+     * @param  Exception $e
+     * @param  integer   $count
+     * @param  integer   $maxRepeat
+     *
+     * @throws Exception
      */
-    public function encoding($encoding = null)
+    protected function _transactionException($e, $count, $maxRepeat)
     {
-        throw new DatabaseException('Encoding is not supported by this driver.');
+        if (static::isDeadlockException($e)) {
+            $this->_transactionLevel--;
+            throw $e;
+        }
+        $this->rollBack();
+
+        if ($count >= $maxRepeat) {
+            throw $e;
+        }
+    }
+
+    /**
+     * Check a lost connection exception.
+     *
+     * @param  Exception $e
+     * @return boolean
+     */
+    public static function isLostConnectionException($e)
+    {
+        $message = strtolower($e->getMessage());
+        foreach ([
+            'no connection to the server',                 // PDO
+            'server has gone away',                        // MySQL
+            'lost connection',                             // MySQL
+            'resource deadlock avoided',                   // MySQL
+            'Transaction() on null',                       // MySQL
+            'decryption failed or bad record mac',         // PostgreSQL
+            'server closed the connection unexpectedly',   // PostgreSQL
+            'ssl connection has been closed unexpectedly', // PostgreSQL
+            'is dead or not enabled'                       // SQL Server
+        ] as $needle) {
+            if (strpos($message, $needle) !== false) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Determine if the given exception was caused by a deadlock.
+     *
+     * @param  Exception $e
+     * @return booleas
+     */
+    public static function isDeadlockException(Exception $e)
+    {
+        $message = strtolower($e->getMessage());
+        foreach ([
+            'deadlock found when trying to get lock', // MySQL
+            'deadlock detected',                      // PostgreSQL
+            'has been chosen as the deadlock victim', // SQL Server
+            'the database file is locked',            // SQLite
+            'database is locked',                     // SQLite
+            'database table is locked',               // SQLite
+            'a table in the database is locked'       // SQLite
+        ] as $needle) {
+            if (strpos($message, $needle) !== false) {
+                return true;
+            }
+        }
+        return false;
     }
 }

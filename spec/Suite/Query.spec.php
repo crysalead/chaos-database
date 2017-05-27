@@ -15,7 +15,8 @@ $box = box('chaos.spec');
 
 $connections = [
     "MySQL" => $box->has('source.database.mysql') ? $box->get('source.database.mysql') : null,
-    "PgSql" => $box->has('source.database.postgresql') ? $box->get('source.database.postgresql') : null
+    "PgSql" => $box->has('source.database.postgresql') ? $box->get('source.database.postgresql') : null,
+    "SQLite" => $box->has('source.database.sqlite') ? $box->get('source.database.sqlite') : null
 ];
 
 foreach ($connections as $db => $connection) {

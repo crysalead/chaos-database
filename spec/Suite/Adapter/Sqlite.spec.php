@@ -24,12 +24,14 @@ describe("Sqlite", function() {
 
             expect(Sqlite::enabled())->toEqual([
                 'arrays'       => false,
-                'transactions' => false,
+                'transactions' => true,
+                'savepoints'   => true,
                 'booleans'     => true,
                 'default'      => false
             ]);
             expect(Sqlite::enabled('arrays'))->toBe(false);
-            expect(Sqlite::enabled('transactions'))->toBe(false);
+            expect(Sqlite::enabled('transactions'))->toBe(true);
+            expect(Sqlite::enabled('savepoints'))->toBe(true);
             expect(Sqlite::enabled('booleans'))->toBe(true);
             expect(Sqlite::enabled('default'))->toBe(false);
 

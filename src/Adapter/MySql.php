@@ -28,9 +28,11 @@ class MySql extends \Chaos\Database\Database
         $features = [
             'arrays' => false,
             'transactions' => true,
+            'savepoints' => true,
             'booleans' => true,
             'default' => false
         ];
+
         if (!func_num_args()) {
             return $features;
         }
