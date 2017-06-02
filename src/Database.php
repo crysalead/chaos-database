@@ -469,14 +469,8 @@ class Database extends Source
      */
     protected function _handlers()
     {
-        return [
+        return Set::extend(parent::_handlers(), [
             'datasource' => [
-                'object'   => function($value, $options = []) {
-                    return $value->to('plain'); // Unexisting handlers will simply return raw data
-                },
-                'string' => function($value, $options = []) {
-                    return (string) $value;
-                },
                 'decimal' => function($value, $options = []) {
                     $options += ['precision' => 2, 'decimal' => '.', 'separator' => ''];
                     return number_format($value, $options['precision'], $options['decimal'], $options['separator']);
@@ -513,7 +507,7 @@ class Database extends Source
                     return $this->dialect()->quote((string) json_encode($value));
                 }
             ]
-        ] + parent::_handlers();
+        ]);
     }
 
     /**
