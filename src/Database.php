@@ -74,7 +74,7 @@ class Database extends Source
      *                       - `'encoding'`  : _string_  The database character encoding.
      *                       - `'connect'`   : _boolean_ Autoconnect on construct if `true`. Defaults to `true`.
      *                       - `'persistent'`: _boolean_ If true a persistent connection will be attempted, provided the
-     *                                         adapter supports it. Defaults to `true`.
+     *                                         adapter supports it. Defaults to `false`.
      *                       - `'options'`   : _array_   Some PDO connection options to set.
      */
     public function __construct($config = [])
@@ -96,7 +96,7 @@ class Database extends Source
             'database'   => null,
             'encoding'   => null,
             'connect'    => true,
-            'persistent' => true,
+            'persistent' => false,
             'options'    => []
         ];
         $config = Set::merge($defaults, $config);

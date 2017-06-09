@@ -47,7 +47,7 @@ describe("Database", function() {
                 'database'   => null,
                 'encoding'   => null,
                 'connect'    => true,
-                'persistent' => true,
+                'persistent' => false,
                 'options'    => []
             ]);
 
