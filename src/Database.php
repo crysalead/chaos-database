@@ -607,9 +607,9 @@ class Database extends Source
      * Determine if the given exception was caused by a deadlock.
      *
      * @param  Exception $e
-     * @return booleas
+     * @return boolean
      */
-    public static function isDeadlockException(Exception $e)
+    public static function isDeadlockException($e)
     {
         $message = strtolower($e->getMessage());
         foreach ([
