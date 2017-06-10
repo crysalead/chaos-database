@@ -287,7 +287,8 @@ class Query implements IteratorAggregate
     public function first($options = [])
     {
         $result = $this->get($options);
-        return is_object($result) ? $result->rewind() : reset($result);
+        $record = is_object($result) ? $result->rewind() : reset($result);
+        return $record ?: null;
     }
 
     /**

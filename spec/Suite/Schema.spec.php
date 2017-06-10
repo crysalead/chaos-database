@@ -663,7 +663,7 @@ foreach ($connections as $db => $connection) {
                     expect($closure)->toThrow(new Exception('Error Processing.'));
 
                     $model = $this->image;
-                    expect($model::load($id))->toBe(false);
+                    expect($model::load($id))->toBe(null);
                     expect($this->connection->transactionLevel())->toBe(0);
 
                 });
@@ -678,7 +678,7 @@ foreach ($connections as $db => $connection) {
                     $id = $image->id();
                     $this->connection->rollback();
 
-                    expect($model::load($id))->toBe(false);
+                    expect($model::load($id))->toBe(null);
                     expect($this->connection->transactionLevel())->toBe(0);
 
                 });

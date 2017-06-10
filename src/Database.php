@@ -349,7 +349,7 @@ class Database extends Source
             } catch (Exception $e) {
                 $this->_transactionException($e, $count, $maxRepeat);
             } catch (Throwable $e) {
-                $this->rollBack();
+                $this->rollback();
                 throw $e;
             }
         }
@@ -384,7 +384,7 @@ class Database extends Source
      *
      * @param integer|null $toLevel
      */
-    public function rollBack($toLevel = null)
+    public function rollback($toLevel = null)
     {
         $toLevel = !func_num_args() ? $this->_transactionLevel - 1 : $toLevel;
 
@@ -393,7 +393,7 @@ class Database extends Source
         }
 
         if ($toLevel === 0) {
-            $this->client()->rollBack();
+            $this->client()->rollback();
         } elseif (static::enabled('savepoints')) {
             $name = 'TRANS' . ($toLevel + 1);
             $this->execute("ROLLBACK TO SAVEPOINT {$name}");
@@ -569,7 +569,7 @@ class Database extends Source
             $this->_transactionLevel--;
             throw $e;
         }
-        $this->rollBack();
+        $this->rollback();
 
         if ($count >= $maxRepeat) {
             throw $e;
