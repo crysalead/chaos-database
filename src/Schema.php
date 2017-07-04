@@ -119,9 +119,10 @@ class Schema extends \Chaos\ORM\Schema
      *
      * @param  array   $inserts An array of entities to insert.
      * @param  Closure $filter  The filter handler for which extract entities values for the insertion.
+     * @param  array   $options The save option.
      * @return boolean          Returns `true` if insert operations succeeded, `false` otherwise.
      */
-    public function bulkInsert($inserts, $filter)
+    public function bulkInsert($inserts, $filter, $options = [])
     {
         if (!$inserts) {
             return true;
@@ -142,9 +143,10 @@ class Schema extends \Chaos\ORM\Schema
      *
      * @param  array   $updates An array of entities to update.
      * @param  Closure $filter  The filter handler for which extract entities values to update.
+     * @param  array   $options The save option.
      * @return boolean          Returns `true` if update operations succeeded, `false` otherwise.
      */
-    public function bulkUpdate($updates, $filter)
+    public function bulkUpdate($updates, $filter, $options = [])
     {
         if (!$updates) {
             return true;
