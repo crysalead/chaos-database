@@ -115,7 +115,7 @@ foreach ($connections as $db => $connection) {
 
             });
 
-            it("throw an exception when source is not set", function() {
+            it("throws an exception when source is not set on create", function() {
 
                 $closure = function() {
                     $schema = new Schema(['connection' => $this->connection]);
@@ -126,7 +126,7 @@ foreach ($connections as $db => $connection) {
 
             });
 
-            it("throw an exception when source is not set", function() {
+            it("throws an exception when source is not set on drop", function() {
 
                 $closure = function() {
                     $schema = new Schema(['connection' => $this->connection]);
