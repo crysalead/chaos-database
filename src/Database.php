@@ -469,6 +469,17 @@ class Database extends Source
      */
     protected function _handlers()
     {
+        $gmstrtotime = function ($value) {
+            $TZ = date_default_timezone_get();
+            if ($TZ === 'UTC') {
+                return strtotime($value);
+            }
+            date_default_timezone_set('UTC');
+            $time = strtotime($value);
+            date_default_timezone_set($TZ);
+            return $time;
+        };
+
         return Set::extend(parent::_handlers(), [
             'datasource' => [
                 'decimal' => function($value, $options = []) {
@@ -481,16 +492,16 @@ class Database extends Source
                 'date' => function($value, $options = []) {
                     return $this->convert('datasource', 'datetime', $value, ['format' => 'Y-m-d']);
                 },
-                'datetime' => function($value, $options = []) {
+                'datetime' => function($value, $options = []) use ($gmstrtotime) {
                     $options += ['format' => 'Y-m-d H:i:s'];
                     if ($value instanceof DateTime) {
                         $date = $value->format($options['format']);
                     } else {
-                        $timestamp = is_numeric($value) ? $value : strtotime($value);
+                        $timestamp = is_numeric($value) ? $value : $gmstrtotime($value);
                         if ($timestamp < 0 || $timestamp === false) {
                             throw new InvalidArgumentException("Invalid date `{$value}`, can't be parsed.");
                         }
-                        $date = date($options['format'], $timestamp);
+                        $date = gmdate($options['format'], $timestamp);
                     }
                     return $this->dialect()->quote((string) $date);
                 },
