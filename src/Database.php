@@ -91,6 +91,7 @@ class Database extends Source
             'dialect'    => null,
             'dsn'        => null,
             'host'       => 'localhost',
+            'socket'     => null,
             'username'   => 'root',
             'password'   => '',
             'database'   => null,
@@ -171,10 +172,10 @@ class Database extends Source
         }
         $config = $this->_config;
 
-        if (!$config['dsn']) {
+        $dsn = $this->dsn();
+        if (!$dsn) {
             throw new DatabaseException('Error, no DSN setup has been configured for database connection.');
         }
-        $dsn = $config['dsn'];
 
         $options = $config['options'] + [
             PDO::ATTR_PERSISTENT => $config['persistent'],
@@ -192,6 +193,27 @@ class Database extends Source
         }
 
         return $this->_client;
+    }
+
+    /**
+     * Return the DSN connection string.
+     *
+     * @return string
+     */
+    public function dsn() {
+        if ($this->_config['dsn']) {
+            return $this->_config['dsn'];
+        }
+        if (!$this->_config['database']) {
+            throw new DatabaseException('Error, no database name has been configured.');
+        }
+        if ($this->_config['socket']) {
+            return sprintf($this->_protocol . ":unix_socket=%s;dbname=%s", $this->_config['socket'], $this->_config['database']);
+        }
+
+        $host = $this->_config['host'];
+        list($host, $port) = explode(':', $host) + [1 => "3306"];
+        return sprintf($this->_protocol . ":host=%s;port=%s;dbname=%s", $host, $port, $this->_config['database']);
     }
 
     /**

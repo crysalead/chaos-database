@@ -11,6 +11,13 @@ use Chaos\Database\DatabaseException;
 class Sqlite extends \Chaos\Database\Database
 {
     /**
+     * The protocol.
+     *
+     * @var string
+     */
+    protected $_protocol = 'sqlite';
+
+    /**
      * Check for required PHP extension, or supported database feature.
      *
      * @param  string  $feature Test for support for a specific feature, i.e. `"transactions"`
@@ -62,22 +69,15 @@ class Sqlite extends \Chaos\Database\Database
     }
 
     /**
-     * Connects to the database using the options provided to the class constructor.
+     * Return the DSN connection string.
      *
-     * @return boolean Returns `true` if a database connection could be established,
-     *                 otherwise `false`.
+     * @return string
      */
-    public function connect()
-    {
-        if (!$this->_config['database']) {
-            throw new DatabaseException('Error, no database name has been configured.');
+    public function dsn() {
+        if ($this->_config['dsn']) {
+            return $this->_config['dsn'];
         }
-
-        if (!$this->_config['dsn']) {
-            $this->_config['dsn'] = "sqlite:" . $this->_config['database'];
-        }
-
-        return parent::connect();
+        return $this->_protocol . ':' . $this->_config['database'];
     }
 
     /**

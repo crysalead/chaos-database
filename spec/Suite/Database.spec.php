@@ -42,6 +42,7 @@ describe("Database", function() {
                 ],
                 'dsn'        => null,
                 'host'       => 'localhost',
+                'socket'     => null,
                 'username'   => 'root',
                 'password'   => '',
                 'database'   => null,
@@ -72,7 +73,7 @@ describe("Database", function() {
             $closure = function() {
                 Double::instance(['extends' => 'Chaos\Database\Database']);
             };
-            expect($closure)->toThrow(new DatabaseException('Error, no DSN setup has been configured for database connection.'));
+            expect($closure)->toThrow(new DatabaseException('Error, no database name has been configured.'));
 
 
         });

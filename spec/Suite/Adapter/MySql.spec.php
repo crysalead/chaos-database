@@ -59,6 +59,49 @@ describe("MySql", function() {
 
     });
 
+    describe("->dsn()", function() {
+
+        it("returns the manually setted DSN", function() {
+
+            $pdoDsn = 'mysql:host=localhost;port=3307;dbname=testdb';
+            $db = new MySql(['dsn' => $pdoDsn, 'connect' => false]);
+            expect($db->dsn())->toBe($pdoDsn);
+
+        });
+
+        it("builds the PDO DSN", function() {
+
+            $db = new MySql(['database' => 'testdb', 'connect' => false]);
+            expect($db->dsn())->toBe('mysql:host=localhost;port=3306;dbname=testdb');
+
+        });
+
+        it("builds the PDO DSN with a custom host & port", function() {
+
+            $db = new MySql(['database' => 'testdb', 'host' => 'dbhost:3307', 'connect' => false]);
+            expect($db->dsn())->toBe('mysql:host=dbhost;port=3307;dbname=testdb');
+
+        });
+
+        it("builds the PDO DSN with a custom socket", function() {
+
+            $db = new MySql(['database' => 'testdb', 'socket' => '/tmp/mysql.sock', 'connect' => false]);
+            expect($db->dsn())->toBe('mysql:unix_socket=/tmp/mysql.sock;dbname=testdb');
+
+        });
+
+        it("throws an exception if no database name is set", function() {
+
+            $closure = function() {
+                $db = new MySql(['connect' => false]);
+                $db->dsn();
+            };
+            expect($closure)->toThrow(new DatabaseException('Error, no database name has been configured.'));
+
+        });
+
+    });
+
     describe("->sources()", function() {
 
         it("shows sources", function() {

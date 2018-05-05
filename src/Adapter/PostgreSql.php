@@ -18,6 +18,13 @@ use Chaos\Database\DatabaseException;
 class PostgreSql extends \Chaos\Database\Database
 {
     /**
+     * The protocol.
+     *
+     * @var string
+     */
+    protected $_protocol = 'pgsql';
+
+    /**
      * Check for required PHP extension, or supported database feature.
      *
      * @param  string  $feature Test for support for a specific feature, i.e. `"transactions"`
@@ -27,7 +34,7 @@ class PostgreSql extends \Chaos\Database\Database
      */
     public static function enabled($feature = null)
     {
-        if (!extension_loaded('pdo_mysql')) {
+        if (!extension_loaded('pdo_pgsql')) {
             throw new DatabaseException("The PDO PostgreSQL extension is not installed.");
         }
 
@@ -108,17 +115,6 @@ class PostgreSql extends \Chaos\Database\Database
      */
     public function connect()
     {
-        if (!$this->_config['database']) {
-            throw new DatabaseException('Error, no database name has been configured.');
-        }
-
-        if (!$this->_config['dsn']) {
-            $host = $this->_config['host'];
-            list($host, $port) = explode(':', $host) + [1 => "5432"];
-            $dsn = "pgsql:host=%s;port=%s;dbname=%s";
-            $this->_config['dsn'] = sprintf($dsn, $host, $port, $this->_config['database']);
-        }
-
         if (!parent::connect()) {
             return false;
         }

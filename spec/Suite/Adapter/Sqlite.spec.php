@@ -46,14 +46,19 @@ describe("Sqlite", function() {
 
     });
 
-    describe("->connect()", function() {
+    describe("->dsn()", function() {
 
-        it("throws an exception if no database name is set", function() {
+        it("returns the default DSN", function() {
 
-            $closure = function() {
-                new Sqlite(['database' => null]);
-            };
-            expect($closure)->toThrow(new DatabaseException('Error, no database name has been configured.'));
+            $db = new Sqlite(['connect' => false]);
+            expect($db->dsn())->toBe('sqlite::memory:');
+
+        });
+
+        it("builds the PDO DSN", function() {
+
+            $db = new Sqlite(['database' => '/opt/databases/mydb.sq2', 'connect' => false]);
+            expect($db->dsn())->toBe('sqlite:/opt/databases/mydb.sq2');
 
         });
 

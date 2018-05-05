@@ -12,6 +12,13 @@ use Chaos\Database\DatabaseException;
 class MySql extends \Chaos\Database\Database
 {
     /**
+     * The protocol.
+     *
+     * @var string
+     */
+    protected $_protocol = 'mysql';
+
+    /**
      * Check for required PHP extension, or supported database feature.
      *
      * @param  string  $feature Test for support for a specific feature, i.e. `"transactions"`
@@ -69,17 +76,6 @@ class MySql extends \Chaos\Database\Database
      */
     public function connect()
     {
-        if (!$this->_config['database']) {
-            throw new DatabaseException('Error, no database name has been configured.');
-        }
-
-        if (!$this->_config['dsn']) {
-            $host = $this->_config['host'];
-            list($host, $port) = explode(':', $host) + [1 => "3306"];
-            $dsn = "mysql:host=%s;port=%s;dbname=%s";
-            $this->_config['dsn'] = sprintf($dsn, $host, $port, $this->_config['database']);
-        }
-
         if (!parent::connect()) {
             return false;
         }
