@@ -271,6 +271,39 @@ class Schema extends \Chaos\ORM\Schema
     }
 
     /**
+     * Returns the schema default values.
+     *
+     * @param  array $basePath The basePath to extract default values from.
+     * @return mixed           Returns all default values .
+     */
+    public function defaults($basePath = null)
+    {
+        $defaults = [];
+        foreach ($this->_columns as $key => $value) {
+            if ($basePath && strpos($key, $basePath) !== 0) {
+                continue;
+            }
+            $fieldName = $basePath ? substr($key, strlen($basePath) + 1) : $key;
+            if (!$fieldName || $fieldName === '*' || strpos($fieldName, '.') !== false) {
+                continue;
+            }
+            if (array_key_exists('default', $value)) {
+                if (is_array($value['default'])) {
+                    $operator = key($value['default']);
+                    $connection = $this->_connection;
+                    if (!$connection || !$connection->dialect()->isOperator($operator)) {
+                        $defaults[$fieldName] = $value['default'];
+                    }
+                } else {
+                    $defaults[$fieldName] = $value['default'];
+                }
+            }
+        }
+
+        return $defaults;
+    }
+
+    /**
      * Formats a value according to its type.
      *
      * @param   string $mode    The format mode (i.e. `'cast'` or `'datasource'`).
@@ -284,10 +317,10 @@ class Schema extends \Chaos\ORM\Schema
         $formatter = null;
         $type = $value === null ? 'null' : $type;
         if (is_array($value)) {
-            $key = key($value);
+            $operator = key($value);
             $connection = $this->_connection;
-            if ($connection && $connection->dialect()->isOperator($key)) {
-               return $connection->dialect()->format($key, $value[$key]);
+            if ($connection && $connection->dialect()->isOperator($operator)) {
+               return $connection->dialect()->format($operator, $value[$operator]);
             }
         }
         if (isset($this->_formatters[$mode][$type])) {

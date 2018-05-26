@@ -139,6 +139,26 @@ foreach ($connections as $db => $connection) {
 
         });
 
+        describe("->defaults()", function() {
+
+            it("filters out non standard values", function() {
+
+                $schema = new Schema([
+                    'connection'  => $this->connection
+                ]);
+                $schema->column('name', ['type' => 'string', 'default' => 'Enter The Name Here']);
+                $schema->column('title', ['type' => 'string', 'default' => 'Enter The Title Here', 'length' => 50]);
+                $schema->column('updatedAt', ['type' => 'datetime', 'default' => [':plain' => 'CURRENT_TIMESTAMP']]);
+                $schema->column('createdAt', ['type' => 'datetime', 'default' => [':plain' => 'CURRENT_TIMESTAMP']]);
+                expect($schema->defaults())->toBe([
+                    'name'       => 'Enter The Name Here',
+                    'title'      => 'Enter The Title Here'
+                ]);
+
+            });
+
+        });
+
         context("with all data populated", function() {
 
             beforeEach(function() {
