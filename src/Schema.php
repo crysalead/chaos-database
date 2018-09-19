@@ -221,7 +221,7 @@ class Schema extends \Chaos\ORM\Schema
      *                             options.
      * @return boolean             Returns `true` if the remove operation succeeded, otherwise `false`.
      */
-    public function truncate($conditions = [], $options = [])
+    public function remove($conditions = [], $options = [])
     {
         $delete = $this->connection()->dialect()->statement('delete');
 
@@ -229,6 +229,20 @@ class Schema extends \Chaos\ORM\Schema
                ->where($conditions);
 
         return $this->connection()->query($delete->toString());
+    }
+
+    /**
+     * Truncate a table.
+     *
+     * @return boolean Returns `true` if the remove operation succeeded, otherwise `false`.
+     */
+    public function truncate($conditions = [], $options = [])
+    {
+        $truncate = $this->connection()->dialect()->statement('truncate');
+
+        $truncate->table($this->source());
+
+        return $this->connection()->query($truncate->toString());
     }
 
     /**

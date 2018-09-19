@@ -762,6 +762,22 @@ foreach ($connections as $db => $connection) {
 
         });
 
+        describe("->truncate()", function() {
+
+            it("truncate a table", function() {
+
+                $this->fixtures->populate('gallery', ['records']);
+                $model = $this->gallery;
+                $schema = $model::definition();
+
+                expect($model::all()->count())->toBe(2);
+                $schema->truncate();
+                expect($model::all()->count())->toBe(0);
+
+            });
+
+        });
+
     });
 
 };
