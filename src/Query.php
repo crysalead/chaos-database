@@ -640,7 +640,8 @@ class Query implements IteratorAggregate
             return [];
         }
         $keys = $rel->keys();
-        list($fromField, $toField) = each($keys);
+        $fromField = key($keys);
+        $toField = current($keys);
         return ['=' => [[':name' =>"{$fromAlias}.{$fromField}"], [':name' => "{$toAlias}.{$toField}"]]];
     }
 
