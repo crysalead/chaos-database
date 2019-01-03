@@ -45,6 +45,11 @@ class Database extends Source
     protected $_transactionLevel = 0;
 
     /**
+     * The transaction current level
+     */
+    protected $_currentLevel = 0;
+
+    /**
      * Specific value denoting whether or not table aliases should be used in DELETE and UPDATE queries.
      *
      * @var boolean
@@ -345,11 +350,12 @@ class Database extends Source
     {
         if ($this->_transactionLevel === 0) {
             $this->client()->beginTransaction();
-        } elseif ($this->_transactionLevel >0 && static::enabled('savepoints')) {
+        } elseif ($this->_transactionLevel > 0 && $this->_transactionLevel === $this->_currentLevel && static::enabled('savepoints')) {
             $name = 'TRANS' . ($this->_transactionLevel + 1);
             $this->execute("SAVEPOINT {$name}");
         }
         $this->_transactionLevel++;
+        $this->_currentLevel = $this->_transactionLevel;
     }
 
     /**
@@ -398,6 +404,7 @@ class Database extends Source
 
         if ($this->_transactionLevel === 0) {
             $this->client()->commit();
+            $this->_currentLevel = 0;
         }
     }
 
@@ -422,6 +429,7 @@ class Database extends Source
         }
 
         $this->_transactionLevel = $toLevel;
+        $this->_currentLevel = $this->_transactionLevel;
     }
 
     /**
