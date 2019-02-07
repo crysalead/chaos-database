@@ -7,6 +7,7 @@ use Lead\Set\Set;
 use Chaos\ORM\ORMException;
 use Chaos\Database\DatabaseException;
 use Chaos\ORM\Model;
+use Chaos\ORM\Document;
 use Chaos\Database\Query;
 use Chaos\Database\Schema;
 
@@ -154,6 +155,37 @@ foreach ($connections as $db => $connection) {
                     'name'       => 'Enter The Name Here',
                     'title'      => 'Enter The Title Here'
                 ]);
+
+            });
+
+            it("correctly sets default values with stars", function() {
+
+                $schema = new Schema();
+                $schema->column('data', ['type' => 'object', 'default' => []]);
+                $schema->column('data.*', ['type' => 'object', 'default' => []]);
+                $schema->column('data.*.checked', ['type' => 'boolean', 'default' => true]);
+                $schema->locked(true);
+
+                $document = new Document(['schema' => $schema]);
+
+                expect($document->get('data.value1.checked'))->toBe(true);
+
+            });
+
+            it("correctly sets default values with stars and prefix collisions", function() {
+
+                $schema = new Schema();
+                $schema->column('datasource', ['type' => 'boolean', 'default' => false]);
+                $schema->column('data', ['type' => 'object', 'default' => []]);
+                $schema->column('data.*', ['type' => 'object', 'default' => []]);
+                $schema->column('data.*.checked', ['type' => 'boolean', 'default' => true]);
+
+                $schema->locked(true);
+
+                $document = new Document(['schema' => $schema]);
+
+                expect($document->get('datasource'))->toBe(false);
+                expect($document->get('data.value1.checked'))->toBe(true);
 
             });
 
