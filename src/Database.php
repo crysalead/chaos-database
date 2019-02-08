@@ -475,12 +475,14 @@ class Database extends Source
     /**
      * Formats a value according to its definition.
      *
-     * @param   string $mode  The format mode (i.e. `'cast'` or `'datasource'`).
-     * @param   string $type  The type name.
-     * @param   mixed  $value The value to format.
-     * @return  mixed         The formated value.
+     * @param  string $mode  The format mode (i.e. `'cast'` or `'datasource'`).
+     * @param  string $type  The type name.
+     * @param  mixed  $value The value to format.
+     * @param  array  $column  The column options to pass the the formatter handler.
+     * @param  array  $options The options to pass the the formatter handler (for `'cast'` mode only).
+     * @return mixed         The formated value.
      */
-    public function convert($mode, $type, $value, $options = [])
+    public function convert($mode, $type, $value, $column = [], $options = [])
     {
         if (is_array($value)) {
             $key = key($value);
@@ -489,7 +491,7 @@ class Database extends Source
                return $dialect->format($key, $value[$key]);
             }
         }
-        return parent::convert($mode, $type, $value, $options);
+        return parent::convert($mode, $type, $value, $column, $options);
     }
 
     /**
@@ -512,36 +514,36 @@ class Database extends Source
 
         return Set::extend(parent::_handlers(), [
             'datasource' => [
-                'decimal' => function($value, $options = []) {
-                    $options += ['precision' => 2, 'decimal' => '.', 'separator' => ''];
-                    return number_format($value, $options['precision'], $options['decimal'], $options['separator']);
+                'decimal' => function($value, $column) {
+                    $column += ['precision' => 2, 'decimal' => '.', 'separator' => ''];
+                    return number_format($value, $column['precision'], $column['decimal'], $column['separator']);
                 },
-                'quote' => function($value, $options = []) {
+                'quote' => function($value, $column) {
                     return $this->dialect()->quote((string) $value);
                 },
-                'date' => function($value, $options = []) {
+                'date' => function($value, $column) {
                     return $this->convert('datasource', 'datetime', $value, ['format' => 'Y-m-d']);
                 },
-                'datetime' => function($value, $options = []) use ($gmstrtotime) {
-                    $options += ['format' => 'Y-m-d H:i:s'];
+                'datetime' => function($value, $column) use ($gmstrtotime) {
+                    $column += ['format' => 'Y-m-d H:i:s'];
                     if ($value instanceof DateTime) {
-                        $date = $value->format($options['format']);
+                        $date = $value->format($column['format']);
                     } else {
                         $timestamp = is_numeric($value) ? $value : $gmstrtotime($value);
                         if ($timestamp < 0 || $timestamp === false) {
                             throw new InvalidArgumentException("Invalid date `{$value}`, can't be parsed.");
                         }
-                        $date = gmdate($options['format'], $timestamp);
+                        $date = gmdate($column['format'], $timestamp);
                     }
                     return $this->dialect()->quote((string) $date);
                 },
-                'boolean' => function($value, $options = []) {
+                'boolean' => function($value, $column) {
                     return $value ? 'TRUE' : 'FALSE';
                 },
-                'null'    => function($value, $options = []) {
+                'null'    => function($value, $column) {
                     return 'NULL';
                 },
-                'json'    => function($value, $options = []) {
+                'json'    => function($value, $column) {
                     if (is_object($value)) {
                         $value = $value->data();
                     }

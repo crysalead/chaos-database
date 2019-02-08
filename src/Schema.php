@@ -321,13 +321,14 @@ class Schema extends \Chaos\ORM\Schema
     /**
      * Formats a value according to its type.
      *
-     * @param   string $mode    The format mode (i.e. `'cast'` or `'datasource'`).
-     * @param   string $type    The field name.
-     * @param   mixed  $value   The value to format.
-     * @param   mixed  $options The options array to pass the the formatter handler.
-     * @return  mixed           The formated value.
+     * @param  string $mode    The format mode (i.e. `'cast'` or `'datasource'`).
+     * @param  string $type    The field name.
+     * @param  mixed  $value   The value to format.
+     * @param  array  $column  The column options to pass the the formatter handler.
+     * @param  array  $options The options to pass the the formatter handler (for `'cast'` mode only).
+     * @return mixed           The formated value.
      */
-    public function convert($mode, $type, $value, $options = [])
+    public function convert($mode, $type, $value, $column = [], $options = [])
     {
         $formatter = null;
         $type = $value === null ? 'null' : $type;
@@ -343,6 +344,6 @@ class Schema extends \Chaos\ORM\Schema
         } elseif (isset($this->_formatters[$mode]['_default_'])) {
             $formatter = $this->_formatters[$mode]['_default_'];
         }
-        return $formatter ? $formatter($value, $options) : $value;
+        return $formatter ? $formatter($value, $column, $options) : $value;
     }
 }

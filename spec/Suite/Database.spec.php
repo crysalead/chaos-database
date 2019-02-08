@@ -4,6 +4,8 @@ namespace Chaos\Database\Spec\Suite;
 use InvalidArgumentException;
 use DateTime;
 use Chaos\Database\DatabaseException;
+use Chaos\ORM\Document;
+use Chaos\Database\Schema;
 
 use Kahlan\Plugin\Double;
 
@@ -220,6 +222,20 @@ describe("Database", function() {
             expect($this->database->convert('cast', 'string', 'abc'))->toBe('abc');
             expect($this->database->convert('cast', '_default_', 123))->toBe(123);
             expect($this->database->convert('cast', '_undefined_', 123))->toBe(123);
+            expect($this->database->convert('cast', 'json', '[1,2]'))->toEqual([1,2]);
+            expect($this->database->convert('cast', 'object', ['a' => 'b'])->data())->toEqual(['a' => 'b']);
+
+            $schema = new Schema(['locked' => false]);
+            $value = $this->database->convert('cast', 'object', ['a' => 'b'], [], ['basePath' => 'test', 'schema' => $schema]);
+            expect($value->basePath())->toEqual('test');
+            expect($value->schema())->toEqual($schema);
+            expect($value->data())->toEqual(['a' => 'b']);
+
+            $document = new Document();
+            expect($this->database->convert('cast', 'object', $document))->toBe($document);
+
+            $date = new DateTime();
+            expect($this->database->convert('cast', 'object', $date))->toBe($date);
 
         });
 
