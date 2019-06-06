@@ -45,11 +45,6 @@ class Database extends Source
     protected $_transactionLevel = 0;
 
     /**
-     * The transaction current level
-     */
-    protected $_currentLevel = 0;
-
-    /**
      * Specific value denoting whether or not table aliases should be used in DELETE and UPDATE queries.
      *
      * @var boolean
@@ -350,12 +345,13 @@ class Database extends Source
     {
         if ($this->_transactionLevel === 0) {
             $this->client()->beginTransaction();
-        } elseif ($this->_transactionLevel > 0 && $this->_transactionLevel === $this->_currentLevel && static::enabled('savepoints')) {
-            $name = 'TRANS' . ($this->_transactionLevel + 1);
+        } else {
+            $name = 'TRANS' . $this->_transactionLevel;
             $this->execute("SAVEPOINT {$name}");
         }
-        $this->_transactionLevel++;
-        $this->_currentLevel = $this->_transactionLevel;
+        if (static::enabled('savepoints')) {
+            $this->_transactionLevel++;
+        }
     }
 
     /**
@@ -398,13 +394,15 @@ class Database extends Source
      */
     public function commit()
     {
-        if ($this->_transactionLevel > 0) {
+        if (static::enabled('savepoints')) {
             $this->_transactionLevel--;
         }
 
         if ($this->_transactionLevel === 0) {
             $this->client()->commit();
-            $this->_currentLevel = 0;
+        } else {
+            $name = 'TRANS' . $this->_transactionLevel;
+            $this->execute("RELEASE SAVEPOINT {$name}");
         }
     }
 
@@ -421,15 +419,21 @@ class Database extends Source
             return;
         }
 
-        if ($toLevel === 0) {
-            $this->client()->rollback();
-        } elseif (static::enabled('savepoints')) {
-            $name = 'TRANS' . ($toLevel + 1);
-            $this->execute("ROLLBACK TO SAVEPOINT {$name}");
+        if (static::enabled('savepoints')) {
+            $this->_transactionLevel = $toLevel;
         }
 
-        $this->_transactionLevel = $toLevel;
-        $this->_currentLevel = $this->_transactionLevel;
+        if ($toLevel === 0) {
+            $this->client()->rollback();
+            return;
+        }
+
+        try {
+            $name = 'TRANS' . $toLevel;
+            $this->execute("ROLLBACK TO SAVEPOINT {$name}");
+        } catch (Throwable $e) {
+            // Ignore rollback errors (which may happens when a deadlock occurs which auto perform a rollback)
+        }
     }
 
     /**
