@@ -401,8 +401,12 @@ class Database extends Source
         if ($this->_transactionLevel === 0) {
             $this->client()->commit();
         } else {
-            $name = 'TRANS' . $this->_transactionLevel;
-            $this->execute("RELEASE SAVEPOINT {$name}");
+            try {
+                $name = 'TRANS' . $this->_transactionLevel;
+                $this->execute("RELEASE SAVEPOINT {$name}");
+            } catch (Throwable $e) {
+                // Ignore rollback errors (which may happens on deadlocks or when an implicit commit has occurs which can't be rollback)
+            }
         }
     }
 
@@ -432,7 +436,7 @@ class Database extends Source
             $name = 'TRANS' . $toLevel;
             $this->execute("ROLLBACK TO SAVEPOINT {$name}");
         } catch (Throwable $e) {
-            // Ignore rollback errors (which may happens when a deadlock occurs which auto perform a rollback)
+            // Ignore rollback errors (which may happens on deadlocks or when an implicit commit has occurs which can't be rollback)
         }
     }
 
