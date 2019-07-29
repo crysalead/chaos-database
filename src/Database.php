@@ -405,6 +405,7 @@ class Database extends Source
                 $name = 'TRANS' . $this->_transactionLevel;
                 $this->execute("RELEASE SAVEPOINT {$name}");
             } catch (Throwable $e) {
+                $this->_transactionLevel = 0;
                 // Ignore rollback errors (which may happens on deadlocks or when an implicit commit has occurs which can't be rollback)
             }
         }
@@ -436,6 +437,7 @@ class Database extends Source
             $name = 'TRANS' . $toLevel;
             $this->execute("ROLLBACK TO SAVEPOINT {$name}");
         } catch (Throwable $e) {
+            $this->_transactionLevel = 0;
             // Ignore rollback errors (which may happens on deadlocks or when an implicit commit has occurs which can't be rollback)
         }
     }
