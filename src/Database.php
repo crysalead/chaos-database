@@ -524,6 +524,9 @@ class Database extends Source
 
         return Set::extend(parent::_handlers(), [
             'datasource' => [
+                'object'   => function($value, $column) {
+                    return $column['type'] === 'object' ? (object) $value->to('datasource') : $value->to('datasource');
+                },
                 'decimal' => function($value, $column) {
                     $column += ['precision' => 2, 'decimal' => '.', 'separator' => ''];
                     return number_format($value, $column['precision'], $column['decimal'], $column['separator']);
@@ -554,9 +557,6 @@ class Database extends Source
                     return 'NULL';
                 },
                 'json'    => function($value, $column) {
-                    if (is_object($value)) {
-                        $value = $value->data();
-                    }
                     return $this->dialect()->quote((string) json_encode($value));
                 }
             ]
