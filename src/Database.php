@@ -525,7 +525,7 @@ class Database extends Source
         return Set::extend(parent::_handlers(), [
             'datasource' => [
                 'object'   => function($value, $column) {
-                    return $column['type'] === 'object' ? (object) $value->to('datasource') : $value->to('datasource');
+                    return $column['type'] === 'object' ? (object) $value->to('array') : $value->to('array');
                 },
                 'decimal' => function($value, $column) {
                     $column += ['precision' => 2, 'decimal' => '.', 'separator' => ''];
