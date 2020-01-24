@@ -10,7 +10,7 @@
         "crysalead/sql-dialect": "dev-master"
     },
     "require-dev": {
-        "kahlan/kahlan": "~4.5"
+        "kahlan/kahlan": "~4.6"
     },
     "autoload": {
         "psr-4": {
