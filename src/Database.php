@@ -120,10 +120,10 @@ class Database extends Source
 
         $handlers = $this->_handlers;
 
-        $this->formatter('datasource', 'id',        $handlers['datasource']['string']);
-        $this->formatter('datasource', 'serial',    $handlers['datasource']['string']);
-        $this->formatter('datasource', 'integer',   $handlers['datasource']['string']);
-        $this->formatter('datasource', 'float',     $handlers['datasource']['string']);
+        $this->formatter('datasource', 'id',        $handlers['datasource']['integer']);
+        $this->formatter('datasource', 'serial',    $handlers['datasource']['integer']);
+        $this->formatter('datasource', 'integer',   $handlers['datasource']['integer']);
+        $this->formatter('datasource', 'float',     $handlers['datasource']['float']);
         $this->formatter('datasource', 'decimal',   $handlers['datasource']['decimal']);
         $this->formatter('datasource', 'date',      $handlers['datasource']['date']);
         $this->formatter('datasource', 'datetime',  $handlers['datasource']['datetime']);
@@ -527,9 +527,18 @@ class Database extends Source
                 'object'   => function($value, $column) {
                     return $column['type'] === 'object' ? (object) $value->to('array') : $value->to('array');
                 },
+                'integer' => function($value, $column) {
+                    return is_numeric($value) ? (string) $value : '';
+                },
+                'float'   => function($value, $column) {
+                    return is_numeric($value) ? (string) $value : '';
+                },
                 'decimal' => function($value, $column) {
                     $column += ['precision' => 2, 'decimal' => '.', 'separator' => ''];
-                    return number_format($value, $column['precision'], $column['decimal'], $column['separator']);
+                    if (!is_numeric($value)) {
+                        return '';
+                    }
+                    return number_format((float) $value, $column['precision'], $column['decimal'], $column['separator']);
                 },
                 'quote' => function($value, $column) {
                     return $this->dialect()->quote((string) $value);
