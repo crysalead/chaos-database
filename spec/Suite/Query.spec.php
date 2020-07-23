@@ -122,6 +122,18 @@ foreach ($connections as $db => $connection) {
 
         });
 
+        describe("->fetchOptions()", function() {
+
+            it("gets/sets the fetching options", function() {
+
+                expect($this->query->fetchOptions()['return'])->toBe('entity');
+                $this->query->fetchOptions(['return' => 'array']);
+                expect($this->query->fetchOptions()['return'])->toBe('array');
+
+            });
+
+        });
+
         describe("->get()", function() {
 
             it("finds all records", function() {

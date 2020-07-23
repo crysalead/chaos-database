@@ -91,6 +91,13 @@ class Query implements IteratorAggregate
     protected $_page = [];
 
     /**
+     * Default fetch options.
+     *
+     * @var array
+     */
+    protected $_fetchOptions = [];
+
+    /**
      * Creates a new record object with default values.
      *
      * @param array $config Possible options are:
@@ -184,6 +191,23 @@ class Query implements IteratorAggregate
     }
 
     /**
+     * Get/set default fetch options.
+     *
+     * @param  array|null $fetchOptions The fetching options.
+     * @return array.
+     */
+    public function fetchOptions($fetchOptions = null) {
+        if (func_num_args()) {
+            $this->_fetchOptions = $fetchOptions;
+            return $this;
+        }
+        return $this->_fetchOptions + [
+            'return' => 'entity',
+            'fetch' => PDO::FETCH_ASSOC
+        ];
+    }
+
+    /**
      * Executes the query and returns the result (must implements the `Iterator` interface).
      *
      * (Automagically called on `foreach`)
@@ -204,11 +228,7 @@ class Query implements IteratorAggregate
      */
     public function get($options = [])
     {
-        $defaults = [
-            'return'    => 'entity',
-            'fetch'     => PDO::FETCH_ASSOC
-        ];
-        $options += $defaults;
+        $options += $this->fetchOptions();
 
         $this->_applyHas();
         $this->_applyLimit();
