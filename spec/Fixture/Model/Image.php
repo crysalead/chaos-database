@@ -6,7 +6,6 @@ class Image extends BaseModel
     protected static function _define($schema)
     {
         $schema->column('id', ['type' => 'serial']);
-        $schema->column('gallery_id', ['type' => 'integer']);
         $schema->column('name', ['type' => 'string', 'null' => true]);
         $schema->column('title', ['type' => 'string', 'length' => 50, 'null' => true]);
 
