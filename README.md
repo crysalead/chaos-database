@@ -1,6 +1,6 @@
 # Chaos Database Driver
 
-[![Build Status](https://travis-ci.org/crysalead/chaos-database.png?branch=master)](https://travis-ci.org/crysalead/chaos-database)
+[![Build Status](https://travis-ci.com/crysalead/chaos-database.png?branch=master)](https://travis-ci.com/crysalead/chaos-database)
 [![Scrutinizer Coverage Status](https://scrutinizer-ci.com/g/crysalead/chaos-database/badges/coverage.png?b=master)](https://scrutinizer-ci.com/g/crysalead/chaos-database/?branch=master)
 
 PDO database drivers for [Chaos](https://github.com/crysalead/chaos).
