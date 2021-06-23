@@ -5,17 +5,27 @@ use DateTime;
 use Chaos\Database\DatabaseException;
 use Chaos\Database\Adapter\MySql;
 use Chaos\Database\Schema;
+use Chaos\Database\Spec\Fixture\Fixtures;
 
 describe("MySql", function() {
 
     beforeAll(function() {
         $box = box('chaos.spec');
         skipIf(!$box->has('source.database.mysql'));
-    });
-
-    beforeEach(function() {
-        $box = box('chaos.spec');
         $this->adapter = $box->get('source.database.mysql');
+
+        $fixtures = new Fixtures([
+            'connection' => $this->adapter,
+            'fixtures'   => [
+                'gallery'        => 'Chaos\Database\Spec\Fixture\Schema\Gallery',
+                'gallery_detail' => 'Chaos\Database\Spec\Fixture\Schema\GalleryDetail',
+                'image'          => 'Chaos\Database\Spec\Fixture\Schema\Image',
+                'image_tag'      => 'Chaos\Database\Spec\Fixture\Schema\ImageTag',
+                'tag'            => 'Chaos\Database\Spec\Fixture\Schema\Tag'
+            ]
+        ]);
+        $fixtures->drop();
+        $fixtures->reset();
     });
 
     describe("::enabled()", function() {
@@ -163,10 +173,12 @@ describe("MySql", function() {
 
             $gallery = $this->adapter->describe('gallery');
 
-            expect($gallery->column('id'))->toEqual([
+            $column = $gallery->column('id');
+            unset($column['length']); // PHP 8.0 has no length for autoincrement
+
+            expect($column)->toEqual([
                 'use'     => 'int',
                 'type'    => 'integer',
-                'length'  => 11,
                 'null'    => false,
                 'default' => null,
                 'array'   => false
@@ -380,7 +392,7 @@ describe("MySql", function() {
 
         it("gets/sets the encoding", function() {
 
-            expect($this->adapter->encoding())->toBe('utf8');
+            expect($this->adapter->encoding() === 'utf8' || $this->adapter->encoding() === 'utf8mb3')->toBe(true);
             expect($this->adapter->encoding('cp1251'))->toBe(true);
             expect($this->adapter->encoding())->toBe('cp1251');
 

@@ -147,8 +147,8 @@ class Fixtures
      */
     public function truncate()
     {
-        foreach ($this->_instances as $instance) {
-            $model = $instance->model();
+        foreach ($this->_fixtures as $name => $fixture) {
+            $model = $this->get($name)->model();
             $model::remove();
         }
     }
@@ -158,15 +158,15 @@ class Fixtures
      */
     public function drop()
     {
-        foreach ($this->_instances as $instance) {
-            $instance->drop();
+        foreach ($this->_fixtures as $name => $fixture) {
+            $this->get($name)->drop();
         }
     }
 
     public function reset()
     {
-        foreach ($this->_instances as $instance) {
-            $model = $instance->model();
+        foreach ($this->_fixtures as $name => $fixture) {
+            $model = $this->get($name)->model();
             $model::reset();
         }
         $this->_instances = [];

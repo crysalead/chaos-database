@@ -196,8 +196,9 @@ class PostgreSql extends \Chaos\Database\Database
                 case 'integer':
                     $default = is_numeric($default) ? $default : null;
                     break;
+                case 'date':
                 case 'datetime':
-                    $default = $default !== 'now()' ? $default : null;
+                    $default = null;
                     break;
             }
 

@@ -119,6 +119,7 @@ class Sqlite extends \Chaos\Database\Database
                 case 'boolean':
                     $default = $default === '1';
                     break;
+                case 'date':
                 case 'datetime':
                     $default = $default !== 'CURRENT_TIMESTAMP' ? $default : null;
                     break;
