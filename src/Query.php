@@ -367,8 +367,10 @@ class Query implements IteratorAggregate
      */
     public function where($conditions, $alias = null)
     {
-        $conditions = $this->statement()->dialect()->prefix($conditions, $alias ?: $this->alias(), false);
-        $this->statement()->where($conditions);
+        if ($conditions) {
+            $conditions = $this->statement()->dialect()->prefix($conditions, $alias ?: $this->alias(), false);
+            $this->statement()->where($conditions);
+        }
         return $this;
     }
 
@@ -494,14 +496,16 @@ class Query implements IteratorAggregate
      */
     public function embed($embed = null, $conditions = [])
     {
-        if (!$embed) {
+        if (!func_num_args()) {
             return $this->_embed;
         }
-        if (!is_array($embed)) {
-            $embed = [$embed => $conditions];
+        if ($embed) {
+            if (!is_array($embed)) {
+                $embed = [$embed => $conditions];
+            }
+            $embed = Set::normalize($embed);
+            $this->_embed = Set::merge($this->_embed, $embed);
         }
-        $embed = Set::normalize($embed);
-        $this->_embed = Set::merge($this->_embed, $embed);
         return $this;
     }
 
@@ -515,10 +519,12 @@ class Query implements IteratorAggregate
         if (!func_num_args()) {
             return $this->_has;
         }
-        if (!is_array($has)) {
-            $has = [$has => $conditions];
+        if ($has) {
+            if (!is_array($has)) {
+                $has = [$has => $conditions];
+            }
+            $this->_has = array_merge($this->_has, $has);
         }
-        $this->_has = array_merge($this->_has, $has);
         return $this;
     }
 
