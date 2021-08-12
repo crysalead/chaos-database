@@ -314,7 +314,17 @@ class Schema extends \Chaos\ORM\Schema
                 }
             }
         }
-
+        if (!$basePath) {
+            foreach($this->_relations as $name => $value) {
+                $rel = $this->relation($name);
+                if ($rel->type() !== 'belongsTo') {
+                    continue;
+                }
+                if (!empty($value['null']) && empty($value['array'])) {
+                    $defaults[$rel->keys('from')] = null;
+                }
+            }
+        }
         return $defaults;
     }
 
