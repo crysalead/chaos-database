@@ -323,7 +323,7 @@ describe("MySql", function() {
             $cursor = $schema->connection()->query('SELECT * FROM test WHERE id = 1');
             $data = $cursor->next();
 
-            expect($data)->toBe([
+            expect($data)->toEqual([
               'id' => '1',
               'name' => 'test',
               'null' => null,

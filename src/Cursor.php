@@ -145,6 +145,7 @@ class Cursor implements \Iterator
      *
      * @return boolean `true` if valid, `false` otherwise.
      */
+    #[\ReturnTypeWillChange]
     public function valid()
     {
         if (!$this->_init) {
@@ -156,6 +157,7 @@ class Cursor implements \Iterator
     /**
      * Rewinds the cursor to its first position.
      */
+    #[\ReturnTypeWillChange]
     public function rewind()
     {
         if ($this->_started && $this->_resource) {
@@ -173,6 +175,7 @@ class Cursor implements \Iterator
      *
      * @return mixed The current value (or `null` if there is none).
      */
+    #[\ReturnTypeWillChange]
     public function current()
     {
         if (!$this->_init) {
@@ -187,6 +190,7 @@ class Cursor implements \Iterator
      *
      * @return integer The current key value.
      */
+    #[\ReturnTypeWillChange]
     public function key()
     {
         if (!$this->_init) {
@@ -201,6 +205,7 @@ class Cursor implements \Iterator
      *
      * @return mixed The next result (or `false` if there is none).
      */
+    #[\ReturnTypeWillChange]
     public function next()
     {
         if ($this->_started === false) {
