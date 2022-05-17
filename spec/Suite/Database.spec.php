@@ -44,6 +44,7 @@ describe("Database", function() {
                 ],
                 'dsn'        => null,
                 'host'       => 'localhost',
+                'port'       => 0,
                 'socket'     => null,
                 'username'   => 'root',
                 'password'   => '',

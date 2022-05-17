@@ -58,7 +58,8 @@ class MySql extends \Chaos\Database\Database
     public function __construct($config = [])
     {
         $defaults = [
-            'host' => 'localhost:3306',
+            'host' => 'localhost',
+            'port' => '3306',
             'classes' => [
                 'dialect' => 'Lead\Sql\Dialect\Dialect\MySql'
             ],

@@ -66,7 +66,8 @@ class PostgreSql extends \Chaos\Database\Database
     public function __construct($config = [])
     {
         $defaults = [
-            'host' => 'localhost:5432',
+            'host' => 'localhost',
+            'port' => '5432',
             'schema' => 'public',
             'timezone' => null,
             'classes' => [
@@ -265,7 +266,7 @@ class PostgreSql extends \Chaos\Database\Database
      */
     public function lastInsertId($sequence = null)
     {
-        $id = $this->client()->lastInsertId($sequence);
+        $id = $this->client()->lastInsertId('"' . $sequence . '"');
         return ($id && $id !== '0') ? $id : null;
     }
 

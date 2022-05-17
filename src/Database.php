@@ -91,6 +91,7 @@ class Database extends Source
             'dialect'    => null,
             'dsn'        => null,
             'host'       => 'localhost',
+            'port'       => 0,
             'socket'     => null,
             'username'   => 'root',
             'password'   => '',
@@ -212,7 +213,7 @@ class Database extends Source
         }
 
         $host = $this->_config['host'];
-        list($host, $port) = explode(':', $host) + [1 => "3306"];
+        list($host, $port) = explode(':', $host) + [1 => $this->_config['port']];
         return sprintf($this->_protocol . ":host=%s;port=%s;dbname=%s", $host, $port, $this->_config['database']);
     }
 
