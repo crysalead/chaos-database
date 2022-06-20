@@ -556,7 +556,7 @@ class Database extends Source
                         if ($timestamp < 0 || $timestamp === false) {
                             throw new InvalidArgumentException("Invalid date `{$value}`, can't be parsed.");
                         }
-                        $date = gmdate($column['format'], $timestamp);
+                        $date = gmdate($column['format'], (integer) $timestamp);
                     }
                     return $this->dialect()->quote((string) $date);
                 },
