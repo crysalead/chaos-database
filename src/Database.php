@@ -196,6 +196,17 @@ class Database extends Source
         return $this->_client;
     }
 
+    public function reconnect()
+    {
+        try {
+            $this->query('SELECT 1');
+        } catch (DatabaseException $e) {
+            $this->_client = null;
+            $this->connect();
+        }
+        return $this->_client;
+    }
+
     /**
      * Return the DSN connection string.
      *
