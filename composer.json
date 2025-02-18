@@ -4,13 +4,13 @@
     "keywords": ["PDO", "Database driver"],
     "license": "MIT",
     "require": {
-        "php": ">=5.5",
-        "crysalead/set": "~2.0",
+        "php": ">=8.3",
+        "crysalead/set": "^2",
         "crysalead/chaos-orm": "dev-master",
         "crysalead/sql-dialect": "dev-master"
     },
     "require-dev": {
-        "kahlan/kahlan": "~5.1"
+        "kahlan/kahlan": "^6"
     },
     "autoload": {
         "psr-4": {

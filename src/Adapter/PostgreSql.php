@@ -252,7 +252,7 @@ class PostgreSql extends \Chaos\Database\Database
             return explode(",", $searchPath['search_path']);
         }
         try{
-            $this->client()->exec("SET search_path TO ${searchPath}");
+            $this->client()->exec("SET search_path TO {$searchPath}");
             return true;
         } catch (PDOException $e) {
             return false;

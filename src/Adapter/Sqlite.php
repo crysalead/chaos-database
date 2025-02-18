@@ -142,6 +142,7 @@ class Sqlite extends \Chaos\Database\Database
     protected function _field($column)
     {
         preg_match('/(?P<type>\w+)(?:\((?P<length>[\d,]+)\))?/', $column['type'], $field);
+        $field['type'] = strtolower($field['type']);
         $field = array_intersect_key($field, ['type' => null, 'length' => null]);
         $field = array_merge(['use' => $field['type']], $field);
 
